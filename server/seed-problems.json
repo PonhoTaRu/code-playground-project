@@ -1,0 +1,107 @@
+[
+  {
+    "id": "sum-two",
+    "title": "บวกเลขสองจำนวน",
+    "prompt": "รับตัวเลขสองจำนวนที่คั่นด้วยช่องว่าง แล้วพิมพ์ผลรวมของมัน",
+    "samples": [{ "in": "5 7", "out": "12" }],
+    "tests": [
+      { "in": "5 7", "out": "12" },
+      { "in": "2 3", "out": "5" },
+      { "in": "10 -4", "out": "6" }
+    ]
+  },
+  {
+    "id": "repeat-word",
+    "title": "พิมพ์คำซ้ำ",
+    "prompt": "รับคำหนึ่งคำ และจำนวนครั้ง จากนั้นพิมพ์คำนั้นซ้ำตามจำนวนที่กำหนด (คั่นด้วยช่องว่าง)",
+    "samples": [{ "in": "hello 3", "out": "hello hello hello" }],
+    "tests": [
+      { "in": "hello 3", "out": "hello hello hello" },
+      { "in": "ok 2", "out": "ok ok" }
+    ]
+  },
+  {
+    "id": "even-odd",
+    "title": "หารด้วยสองได้ไหม",
+    "prompt": "รับตัวเลขหนึ่งตัว ถ้าหาร 2 ลงตัวให้พิมพ์ Even ถ้าไม่ลงตัวให้พิมพ์ Odd",
+    "samples": [{ "in": "7", "out": "Odd" }],
+    "tests": [
+      { "in": "7", "out": "Odd" },
+      { "in": "8", "out": "Even" },
+      { "in": "13", "out": "Odd" }
+    ]
+  },
+  {
+    "id": "hello-name",
+    "title": "ทักทายชื่อผู้ใช้",
+    "prompt": "รับชื่อของคุณ แล้วให้คอมพิวเตอร์พิมพ์คำว่า Hello ตามด้วยชื่อนั้น",
+    "samples": [{ "in": "Mint", "out": "Hello Mint" }],
+    "tests": [
+      { "in": "Mint", "out": "Hello Mint" },
+      { "in": "John", "out": "Hello John" }
+    ]
+  },
+  {
+    "id": "reverse-text",
+    "title": "กลับข้อความ",
+    "prompt": "รับข้อความหนึ่งบรรทัด แล้วพิมพ์ข้อความนั้นกลับด้าน",
+    "samples": [{ "in": "abc", "out": "cba" }],
+    "tests": [
+      { "in": "hello", "out": "olleh" },
+      { "in": "racecar", "out": "racecar" }
+    ]
+  },
+  {
+    "id": "multiply-two",
+    "title": "คูณเลขสองจำนวน",
+    "prompt": "รับตัวเลขสองจำนวน แล้วพิมพ์ผลคูณของมัน",
+    "samples": [{ "in": "3 4", "out": "12" }],
+    "tests": [
+      { "in": "3 4", "out": "12" },
+      { "in": "5 0", "out": "0" },
+      { "in": "9 -2", "out": "-18" }
+    ]
+  },
+  {
+    "id": "count-chars",
+    "title": "นับจำนวนตัวอักษร",
+    "prompt": "รับข้อความหนึ่งบรรทัด แล้วพิมพ์จำนวนตัวอักษรทั้งหมดในข้อความนั้น",
+    "samples": [{ "in": "hello", "out": "5" }],
+    "tests": [
+      { "in": "hi", "out": "2" },
+      { "in": "wow", "out": "3" },
+      { "in": "hello world", "out": "11" }
+    ]
+  },
+  {
+    "id": "print-1-to-n",
+    "title": "แสดงตัวเลข 1 ถึง N",
+    "prompt": "รับเลขหนึ่งตัว แล้วพิมพ์เลข 1 ถึง N ขึ้นบรรทัดละหนึ่ง",
+    "samples": [{ "in": "5", "out": "1\n2\n3\n4\n5" }],
+    "tests": [
+      { "in": "3", "out": "1\n2\n3" },
+      { "in": "1", "out": "1" }
+    ]
+  },
+  {
+    "id": "big-small",
+    "title": "เลขใหญ่หรือเล็ก",
+    "prompt": "รับเลขหนึ่งตัว ถ้าเลขมากกว่า 10 ให้พิมพ์ Big! ถ้าน้อยกว่าหรือเท่ากับ 10 ให้พิมพ์ Small!",
+    "samples": [{ "in": "12", "out": "Big!" }],
+    "tests": [
+      { "in": "12", "out": "Big!" },
+      { "in": "10", "out": "Small!" },
+      { "in": "7", "out": "Small!" }
+    ]
+  },
+  {
+    "id": "combine-words",
+    "title": "รวมคำ",
+    "prompt": "รับคำสองคำที่คั่นด้วยช่องว่าง แล้วพิมพ์คำสองคำรวมกัน (โดยมีช่องว่างคั่น)",
+    "samples": [{ "in": "Good Morning", "out": "Good Morning" }],
+    "tests": [
+      { "in": "Good Morning", "out": "Good Morning" },
+      { "in": "Code Playground", "out": "Code Playground" }
+    ]
+  }
+]
