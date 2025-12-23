@@ -7,9 +7,15 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config?.(); // optional if you have .env and dotenv installed
 
+const { register, login } = require('./auth');
+
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
+
+app.post('/register', register);
+
+app.post('/login', login);
 
 const JUDGE0_ENDPOINT = process.env.JUDGE0_ENDPOINT || 'https://judge0-ce.p.rapidapi.com';
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || ''; // ใส่ RapidAPI key ใน .env ถ้ามี
