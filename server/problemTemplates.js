@@ -84,7 +84,6 @@ const problemTemplates = [
     hints: ["อ่านค่าจาก input", "นำชื่อมาต่อกับคำว่า สวัสดี"],
     starter: `const fs = require("fs");
 const input = fs.readFileSync(0, "utf8").trim();
-
 console.log("สวัสดี " + input);
 `,
     language: "javascript",
@@ -94,6 +93,40 @@ console.log("สวัสดี " + input);
       { input: "ปาล์ม", expected: "สวัสดี ปาล์ม" }
     ],
     validator: { type: "exact" }
+  },
+  {
+    templateId: "sum-two-numbers",
+    type: "static",
+    title: "ผลบวกของตัวเลขสองจำนวน",
+    prompt: "รับตัวเลข 2 จำนวน คั่นด้วยช่องว่าง แล้วแสดงผลรวม",
+    hints: ["ใช้ split(' ') แยกข้อมูล", "แปลงเป็นตัวเลขก่อนบวก"],
+    starter: `const fs = require("fs");
+const input = fs.readFileSync(0, "utf8").trim();
+const [a, b] = input.split(" ").map(Number);
+console.log(a + b);
+`,
+    language: "javascript",
+    samples: [{ input: "2 3", output: "5" }],
+    tests: [
+      { input: "2 3", expected: "5" },
+      { input: "10 20", expected: "30" }
+    ],
+    validator: { type: "number" }
+  },
+  {
+    templateId: "multiply-two-numbers",
+    type: "template",
+    title: "ผลคูณของตัวเลขสองจำนวน",
+    prompt: "รับตัวเลข 2 จำนวน คั่นด้วยช่องว่าง แล้วแสดงผลคูณ",
+    hints: ["ใช้ split(' ') แยกข้อมูล", "แปลงเป็นตัวเลขก่อนคูณ"],
+    starter: `const fs = require("fs");
+const input = fs.readFileSync(0, "utf8").trim();
+const [a, b] = input.split(" ").map(Number);
+console.log(a * b);
+`,
+    language: "javascript",
+    generator: "multiplyTwoNumbers",
+    validator: { type: "number" }
   }
 ];
 

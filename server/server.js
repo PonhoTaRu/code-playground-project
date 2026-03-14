@@ -1,16 +1,10 @@
-// Load environment variables (optional .env)
 require('dotenv').config();
-import { useEffect, useMemo, useState } from "react";
-
-console.log('RAPIDAPI_KEY =', process.env.RAPIDAPI_KEY);
 
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
-
 const { generateProblems } = require("./problemGenerator");
 const { validateOutput } = require("./validators");
-
 const { register, login } = require('./auth');
 
 const app = express();
@@ -18,15 +12,11 @@ app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 
 app.post('/register', register);
-
 app.post('/login', login);
 
 const JUDGE0_ENDPOINT = process.env.JUDGE0_ENDPOINT || 'https://judge0-ce.p.rapidapi.com';
-const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || ''; // ใส่ RapidAPI key ใน .env ถ้ามี
+const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || '';
 
-// โหลดโจทย์
-const { generateRandomProblems } = require('./problemTemplates');
-let problems = [];
 let activeProblems = [];
 
 // helper headers

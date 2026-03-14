@@ -59,7 +59,7 @@ function App() {
   );
   const [customInput, setCustomInput] = useState("");
   const [revealedHints, setRevealedHints] = useState([]); // เก็บ index ของ hints ที่เปิดแล้วสำหรับโจทย์ปัจจุบัน
-  const total = 3;
+  const total = problems.length || 0;
 
   // โหลดโจทย์และ reset revealedHints
   async function loadProblems() {
