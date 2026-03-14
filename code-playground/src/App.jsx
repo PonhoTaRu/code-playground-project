@@ -33,6 +33,7 @@ function detectNeedsInput(promptText = "") {
 
 function getStarterForProblem(problem, starterSolutions = {}) {
   if (!problem) return defaultTemplates.simpleTemplate;
+  if (problem.starter) return problem.starter;
   if (starterSolutions[problem.id]) return starterSolutions[problem.id];
   const needsInput = detectNeedsInput(problem.prompt || "");
   return needsInput
@@ -62,19 +63,23 @@ function App() {
 
   // โหลดโจทย์และ reset revealedHints
   async function loadProblems() {
-    try {
-      setResult(null);
-      setIdx(0);
-      const res = await fetch("/problems.json");
-      const data = await res.json();
-      const selected = data.sort(() => Math.random() - 0.5).slice(0, total);
-      setProblems(selected);
-      setCode(getStarterForProblem(selected[0], starterSolutions));
-      setRevealedHints([]); // รีเซ็ตคำใบ้สำหรับชุดใหม่
-    } catch (e) {
-      console.error("Load problems error", e);
+  try {
+    setResult(null);
+    setIdx(0);
+
+    const res = await fetch("http://localhost:8080/api/problems");
+    if (!res.ok) {
+      throw new Error(`โหลดโจทย์ไม่สำเร็จ: ${res.status}`);
     }
+
+    const data = await res.json();
+    setProblems(data);
+    setCode(getStarterForProblem(data[0], starterSolutions));
+    setRevealedHints([]);
+  } catch (e) {
+    console.error("Load problems error", e);
   }
+}
 
   useEffect(() => {
     loadProblems();
@@ -264,20 +269,20 @@ function App() {
                     }}
                   >
                     <ReactMarkdown
-                      children={currentProblem.prompt || ""}
-                      components={{
-                        p: ({ ...props }) => (
-                          <p
-                            style={{
-                              whiteSpace: "pre-wrap",
-                              lineHeight: 1.6,
-                              margin: 0,
-                            }}
-                            {...props}
-                          />
-                        ),
-                      }}
-                    />
+  children={(currentProblem.prompt || "").replace(/\\n/g, "\n")}
+  components={{
+    p: ({ ...props }) => (
+      <p
+        style={{
+          whiteSpace: "pre-wrap",
+          lineHeight: 1.6,
+          margin: 0,
+        }}
+        {...props}
+      />
+    ),
+  }}
+/>
                   </div>
                 ) : (
                   <div>กำลังโหลดโจทย์...</div>
@@ -422,6 +427,12 @@ function App() {
                         {result.status}
                       </b>
                     </div>
+
+                    {Array.isArray(result.cases) && (
+                      <div style={{ marginTop: 6 }}>
+                        ผ่าน {result.cases.filter((c) => c.pass).length} / {result.cases.length} เคส
+                      </div>
+                    )}
 
                     {result.cases?.map((c, i) => (
                       <details key={i} style={{ marginTop: 8, background: "#0b0b0c", padding: 8, borderRadius: 6 }}>
