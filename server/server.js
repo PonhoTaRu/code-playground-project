@@ -33,18 +33,14 @@ app.get("/api/problems", (req, res) => {
   try {
     activeProblems = generateProblems(3);
 
-    const safeProblems = activeProblems.map((p) => ({
-      id: p.id,
-      title: p.title,
-      prompt: p.prompt,
-      hints: p.hints,
-      starter: p.starter,
-      samples: p.samples,
-    }));
-
+    const safeProblems = activeProblems.map(({ tests, validator, ...rest }) => rest);
     res.json(safeProblems);
-  } catch (e) {
-    res.status(500).json({ error: 'Failed to generate problems', details: e.message });
+  } catch (error) {
+    console.error("GET /api/problems error:", error);
+    res.status(500).json({
+      error: "Failed to generate problems",
+      details: error.message
+    });
   }
 });
 

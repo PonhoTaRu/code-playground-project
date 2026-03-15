@@ -1,132 +1,158 @@
-function randInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+const starterJS = `const fs = require("fs");
+const input = fs.readFileSync(0, "utf8").trim();
 
-function generateSumProblem() {
-  const a = randInt(1, 50);
-  const b = randInt(1, 50);
-
-  return {
-    id: `sum-two-${a}-${b}`,
-    title: "บวกเลขสองจำนวน",
-    prompt: "รับตัวเลขสองจำนวนที่คั่นด้วยช่องว่าง แล้วพิมพ์ผลรวมของมัน",
-    tests: [
-      { in: `${a} ${b}`, out: String(a + b) },
-      { in: `${b} ${a}`, out: String(a + b) }
-    ],
-    hints: [
-      "ใช้ input().split() เพื่อแยกข้อมูล",
-      "แปลงค่าด้วย int ก่อนบวก",
-      "พิมพ์ผลลัพธ์ด้วย print(a + b)"
-    ],
-    starter: "a, b = map(int, input().split())\nprint(a + b)"
-  };
-}
-
-function generateMultiplyProblem() {
-  const a = randInt(1, 20);
-  const b = randInt(1, 20);
-
-  return {
-    id: `multiply-two-${a}-${b}`,
-    title: "คูณเลขสองจำนวน",
-    prompt: "รับตัวเลขสองจำนวนที่คั่นด้วยช่องว่าง แล้วพิมพ์ผลคูณของมัน",
-    tests: [
-      { in: `${a} ${b}`, out: String(a * b) },
-      { in: `${b} ${a}`, out: String(a * b) }
-    ],
-    hints: [
-      "อ่านค่าจาก input().split()",
-      "ใช้ int() แปลงเป็นตัวเลข",
-      "ใช้เครื่องหมาย * ในการคูณ"
-    ],
-    starter: "a, b = map(int, input().split())\nprint(a * b)"
-  };
-}
-
-function generateEvenOddProblem() {
-  const n = randInt(1, 100);
-
-  return {
-    id: `even-odd-${n}`,
-    title: "เลขคู่หรือเลขคี่",
-    prompt: "รับจำนวนเต็มหนึ่งจำนวน แล้วพิมพ์ Even ถ้าเป็นเลขคู่ หรือ Odd ถ้าเป็นเลขคี่",
-    tests: [
-      { in: `${n}`, out: n % 2 === 0 ? "Even" : "Odd" },
-      { in: `${n + 1}`, out: (n + 1) % 2 === 0 ? "Even" : "Odd" }
-    ],
-    hints: [
-      "ใช้ % 2 เพื่อตรวจเลขคู่คี่",
-      "ถ้าเศษเป็น 0 แปลว่าเป็นเลขคู่",
-      "ใช้ if ... else"
-    ],
-    starter: "n = int(input())\nif n % 2 == 0:\n    print('Even')\nelse:\n    print('Odd')"
-  };
-}
-
-const templates = [
-  generateSumProblem,
-  generateMultiplyProblem,
-  generateEvenOddProblem
-];
-
-function generateRandomProblems(count = 3) {
-  const shuffled = [...templates].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count).map(fn => fn());
-}
+// เขียนโค้ดที่นี่
+`;
 
 const problemTemplates = [
   {
     templateId: "hello-name",
-    type: "static",
+    type: "template",
     title: "ทักทายชื่อผู้ใช้",
     prompt: "อ่านชื่อจาก input 1 บรรทัด แล้วพิมพ์ว่า\nสวัสดี <ชื่อ>",
-    hints: ["อ่านค่าจาก input", "นำชื่อมาต่อกับคำว่า สวัสดี"],
-    starter: `const fs = require("fs");
-const input = fs.readFileSync(0, "utf8").trim();
-console.log("สวัสดี " + input);
-`,
-    language: "javascript",
-    samples: [{ input: "มินท์", output: "สวัสดี มินท์" }],
-    tests: [
-      { input: "มินท์", expected: "สวัสดี มินท์" },
-      { input: "ปาล์ม", expected: "สวัสดี ปาล์ม" }
+    hints: [
+      "อ่านข้อมูลจาก input",
+      "นำข้อความ สวัสดี ไปต่อกับชื่อ"
     ],
+    starter: starterJS,
+    language: "javascript",
+    generator: "helloName",
     validator: { type: "exact" }
   },
+
   {
     templateId: "sum-two-numbers",
-    type: "static",
+    type: "template",
     title: "ผลบวกของตัวเลขสองจำนวน",
     prompt: "รับตัวเลข 2 จำนวน คั่นด้วยช่องว่าง แล้วแสดงผลรวม",
-    hints: ["ใช้ split(' ') แยกข้อมูล", "แปลงเป็นตัวเลขก่อนบวก"],
-    starter: `const fs = require("fs");
-const input = fs.readFileSync(0, "utf8").trim();
-const [a, b] = input.split(" ").map(Number);
-console.log(a + b);
-`,
-    language: "javascript",
-    samples: [{ input: "2 3", output: "5" }],
-    tests: [
-      { input: "2 3", expected: "5" },
-      { input: "10 20", expected: "30" }
+    hints: [
+      "ใช้ split(' ') แยกข้อมูล",
+      "แปลงข้อความเป็นตัวเลขก่อนบวก"
     ],
+    starter: starterJS,
+    language: "javascript",
+    generator: "sumTwoNumbers",
     validator: { type: "number" }
   },
+
   {
     templateId: "multiply-two-numbers",
     type: "template",
     title: "ผลคูณของตัวเลขสองจำนวน",
     prompt: "รับตัวเลข 2 จำนวน คั่นด้วยช่องว่าง แล้วแสดงผลคูณ",
-    hints: ["ใช้ split(' ') แยกข้อมูล", "แปลงเป็นตัวเลขก่อนคูณ"],
-    starter: `const fs = require("fs");
-const input = fs.readFileSync(0, "utf8").trim();
-const [a, b] = input.split(" ").map(Number);
-console.log(a * b);
-`,
+    hints: [
+      "ใช้ split(' ') แยกข้อมูล",
+      "แปลงข้อความเป็นตัวเลขก่อนคูณ"
+    ],
+    starter: starterJS,
     language: "javascript",
     generator: "multiplyTwoNumbers",
     validator: { type: "number" }
+  },
+
+  {
+    templateId: "average-three-numbers",
+    type: "template",
+    title: "ค่าเฉลี่ยของตัวเลขสามจำนวน",
+    prompt: "รับตัวเลข 3 จำนวน คั่นด้วยช่องว่าง แล้วแสดงค่าเฉลี่ย",
+    hints: [
+      "นำตัวเลขทั้ง 3 มาบวกกัน",
+      "หารด้วย 3"
+    ],
+    starter: starterJS,
+    language: "javascript",
+    generator: "averageThreeNumbers",
+    validator: { type: "number" }
+  },
+
+  {
+    templateId: "max-of-two",
+    type: "template",
+    title: "หาค่าที่มากกว่า",
+    prompt: "รับตัวเลข 2 จำนวน คั่นด้วยช่องว่าง แล้วแสดงค่าที่มากกว่า",
+    hints: [
+      "เปรียบเทียบตัวเลขทั้งสอง",
+      "อาจใช้ if หรือ Math.max"
+    ],
+    starter: starterJS,
+    language: "javascript",
+    generator: "maxOfTwo",
+    validator: { type: "number" }
+  },
+
+  {
+    templateId: "even-or-odd",
+    type: "template",
+    title: "เลขคู่หรือเลขคี่",
+    prompt: "รับจำนวนเต็ม 1 จำนวน แล้วพิมพ์ว่า Even ถ้าเป็นเลขคู่ หรือ Odd ถ้าเป็นเลขคี่",
+    hints: [
+      "ใช้ % 2",
+      "ถ้าเศษเป็น 0 คือเลขคู่"
+    ],
+    starter: starterJS,
+    language: "javascript",
+    generator: "evenOrOdd",
+    validator: { type: "exact" }
+  },
+
+  {
+    templateId: "celsius-to-fahrenheit",
+    type: "template",
+    title: "แปลงอุณหภูมิ Celsius เป็น Fahrenheit",
+    prompt: "รับค่าอุณหภูมิหน่วยเซลเซียส 1 จำนวน แล้วแสดงผลเป็นฟาเรนไฮต์ โดยใช้สูตร (C × 9/5) + 32",
+    hints: [
+      "ใช้สูตร (C * 9 / 5) + 32",
+      "แปลง input เป็นตัวเลขก่อน"
+    ],
+    starter: starterJS,
+    language: "javascript",
+    generator: "celsiusToFahrenheit",
+    validator: { type: "number" }
+  },
+
+  {
+    templateId: "rectangle-area",
+    type: "template",
+    title: "หาพื้นที่สี่เหลี่ยมผืนผ้า",
+    prompt: "รับค่าความกว้างและความยาว 2 จำนวน คั่นด้วยช่องว่าง แล้วแสดงพื้นที่สี่เหลี่ยมผืนผ้า",
+    hints: [
+      "พื้นที่ = กว้าง × ยาว",
+      "อย่าลืมแปลงเป็นตัวเลข"
+    ],
+    starter: starterJS,
+    language: "javascript",
+    generator: "rectangleArea",
+    validator: { type: "number" }
+  },
+
+  {
+    templateId: "string-length",
+    type: "template",
+    title: "นับจำนวนตัวอักษร",
+    prompt: "อ่านข้อความ 1 บรรทัด แล้วแสดงจำนวนตัวอักษรทั้งหมด",
+    hints: [
+      "สตริงมี property ชื่อ length",
+      "อ่านข้อความจาก input ให้ครบทั้งบรรทัด"
+    ],
+    starter: starterJS,
+    language: "javascript",
+    generator: "stringLength",
+    validator: { type: "number" }
+  },
+
+  {
+    templateId: "reverse-string",
+    type: "template",
+    title: "กลับลำดับข้อความ",
+    prompt: "อ่านข้อความ 1 บรรทัด แล้วแสดงข้อความนั้นในลำดับกลับกัน",
+    hints: [
+      "อาจใช้ split(''), reverse(), join('')",
+      "อ่านข้อความจาก input ให้ครบก่อน"
+    ],
+    starter: starterJS,
+    language: "javascript",
+    generator: "reverseString",
+    validator: { type: "exact" }
   }
 ];
 
