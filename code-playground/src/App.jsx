@@ -152,15 +152,23 @@ function App() {
   };
 
   const handleRestart = () => {
-    setScore(0);
-    setCurrentIndex(0);
-    setSolvedIds([]);
-    const firstProblem =
-      levelFilter === "all"
-        ? problemBank[0]
-        : problemBank.filter((p) => p.level === levelFilter)[0];
-    resetWorkspaceForProblem(firstProblem);
-  };
+  setScore(0);
+  setCurrentIndex(0);
+  setSolvedIds([]);
+
+  setOutput("ยังไม่มีผลลัพธ์");
+  setErrorMessage("");
+  setStatus("idle");
+
+  setCustomOutput("");
+
+  const firstProblem =
+    levelFilter === "all"
+      ? problemBank[0]
+      : problemBank.filter((p) => p.level === levelFilter)[0];
+
+  setCode(firstProblem?.starter || starterCode);
+};
 
   const handleResetCode = () => {
     if (!currentProblem) return;
