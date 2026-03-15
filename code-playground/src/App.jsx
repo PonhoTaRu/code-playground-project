@@ -1,5 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./App.css";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 
 const starterCode = `const fs = require("fs");
 const input = fs.readFileSync(0, "utf8").trim();
@@ -115,6 +117,20 @@ function App() {
   const [errorMessage, setErrorMessage] = useState("");
   const [solvedIds, setSolvedIds] = useState([]);
 
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authMode, setAuthMode] = useState("login");
+  const [username, setUsername] = useState("");
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const savedUsername = localStorage.getItem("username");
+
+    if (token) {
+      setIsLoggedIn(true);
+      setUsername(savedUsername || "");
+    }
+  }, []);
+
   const filteredProblems = useMemo(() => {
     if (levelFilter === "all") return problemBank;
     return problemBank.filter((p) => p.level === levelFilter);
@@ -152,23 +168,21 @@ function App() {
   };
 
   const handleRestart = () => {
-  setScore(0);
-  setCurrentIndex(0);
-  setSolvedIds([]);
+    setScore(0);
+    setCurrentIndex(0);
+    setSolvedIds([]);
+    setOutput("ยังไม่มีผลลัพธ์");
+    setErrorMessage("");
+    setStatus("idle");
+    setCustomOutput("");
 
-  setOutput("ยังไม่มีผลลัพธ์");
-  setErrorMessage("");
-  setStatus("idle");
+    const firstProblem =
+      levelFilter === "all"
+        ? problemBank[0]
+        : problemBank.filter((p) => p.level === levelFilter)[0];
 
-  setCustomOutput("");
-
-  const firstProblem =
-    levelFilter === "all"
-      ? problemBank[0]
-      : problemBank.filter((p) => p.level === levelFilter)[0];
-
-  setCode(firstProblem?.starter || starterCode);
-};
+    setCode(firstProblem?.starter || starterCode);
+  };
 
   const handleResetCode = () => {
     if (!currentProblem) return;
@@ -243,6 +257,57 @@ function App() {
     resetWorkspaceForProblem(filteredProblems[nextIndex]);
   };
 
+  const handleLoginSuccess = (name) => {
+    setIsLoggedIn(true);
+    setUsername(name || localStorage.getItem("username") || "");
+  };
+
+  const handleRegisterSuccess = () => {
+    setAuthMode("login");
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("username");
+    setIsLoggedIn(false);
+    setUsername("");
+    setAuthMode("login");
+  };
+
+  if (!isLoggedIn) {
+    return (
+      <div className="auth-page">
+        <div className="auth-wrapper">
+          <div className="auth-brand">
+            <h1>Code Playground</h1>
+            <p>ฝึกเขียนโค้ดแบบสนุก พร้อมระบบบัญชีผู้ใช้</p>
+          </div>
+
+          <div className="auth-switch">
+            <button
+              className={`auth-tab ${authMode === "login" ? "active" : ""}`}
+              onClick={() => setAuthMode("login")}
+            >
+              เข้าสู่ระบบ
+            </button>
+            <button
+              className={`auth-tab ${authMode === "register" ? "active" : ""}`}
+              onClick={() => setAuthMode("register")}
+            >
+              สมัครสมาชิก
+            </button>
+          </div>
+
+          {authMode === "login" ? (
+            <Login onLogin={handleLoginSuccess} />
+          ) : (
+            <Register onRegisterSuccess={handleRegisterSuccess} />
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (!currentProblem) {
     return (
       <div className="app-shell empty-state">
@@ -263,6 +328,11 @@ function App() {
         </div>
 
         <div className="topbar-right">
+          <div className="stat-card">
+            <span className="stat-label">User</span>
+            <strong>{username || "ผู้ใช้"}</strong>
+          </div>
+
           <div className="stat-card">
             <span className="stat-label">Level</span>
             <select value={levelFilter} onChange={handleLevelChange}>
@@ -287,6 +357,10 @@ function App() {
 
           <button className="ghost-btn" onClick={handleRestart}>
             เริ่มรอบใหม่
+          </button>
+
+          <button className="ghost-btn logout-btn" onClick={handleLogout}>
+            Logout
           </button>
         </div>
       </header>
