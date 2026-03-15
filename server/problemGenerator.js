@@ -1,5 +1,7 @@
 const problemTemplates = require("./problemTemplates");
 
+let lastRoundTemplateIds = [];
+
 function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -20,6 +22,8 @@ function makeProblem(template, samples, tests, promptOverride = null) {
   return {
     id: uniqueId(template.templateId),
     templateId: template.templateId,
+    difficulty: template.difficulty || "easy",
+    score: template.score || 10,
     title: template.title,
     prompt: promptOverride || template.prompt,
     hints: template.hints || [],
@@ -253,8 +257,30 @@ function generateFromTemplate(template) {
   }
 }
 
-function generateProblems(count = 3) {
-  const selectedTemplates = shuffle(problemTemplates).slice(0, count);
+function pickTemplatesByDifficulty(difficulty = "all", count = 3) {
+  let pool =
+    difficulty === "all"
+      ? problemTemplates
+      : problemTemplates.filter((t) => t.difficulty === difficulty);
+
+  if (pool.length === 0) {
+    pool = problemTemplates;
+  }
+
+  const filtered = pool.filter(
+    (t) => !lastRoundTemplateIds.includes(t.templateId)
+  );
+
+  let selectedPool = filtered.length >= count ? filtered : pool;
+  const selected = shuffle(selectedPool).slice(0, count);
+
+  lastRoundTemplateIds = selected.map((t) => t.templateId);
+
+  return selected;
+}
+
+function generateProblems(count = 3, difficulty = "all") {
+  const selectedTemplates = pickTemplatesByDifficulty(difficulty, count);
   return selectedTemplates.map(generateFromTemplate);
 }
 

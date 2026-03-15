@@ -1,504 +1,427 @@
-// src/App.jsx
-import { useEffect, useMemo, useState } from "react";
-import Editor from "@monaco-editor/react";
-import ReactMarkdown from "react-markdown";
-import starterSolutions from "./starterSolutions";
-import Login from './pages/Login';
-import Register from './pages/Register';
+import { useMemo, useState } from "react";
+import "./App.css";
 
-// templates (เหมือนเดิม)
-const defaultTemplates = {
-  inputTemplate: `// อ่าน input จาก stdin (Node.js)
-const fs = require('fs');
-const input = fs.readFileSync(0, 'utf8').trim().split(/\\s+/);
+const starterCode = `const fs = require("fs");
+const input = fs.readFileSync(0, "utf8").trim();
 
-// TODO: แก้โค้ดตามโจทย์
-if (input.length >= 2) {
-  const a = Number(input[0]);
-  const b = Number(input[1]);
-  console.log(a + b);
-}`,
-  simpleTemplate: `// ไม่มี input — เขียนคำตอบโดยใช้ console.log()
-// ตัวอย่าง:
-const a = 5;
-const b = 7;
-console.log(a + " + " + b + " = " + (a + b));`,
-};
+// เขียนโค้ดที่นี่
+`;
 
-function detectNeedsInput(promptText = "") {
-  if (!promptText) return false;
-  const lower = promptText.toLowerCase();
-  return /\bรับ\b|\binput\b|\bรับตัว\b|\binput:/i.test(lower);
+const problemBank = [
+  {
+    id: 1,
+    level: "easy",
+    title: "กลับลำดับข้อความ",
+    description: "อ่านข้อความ 1 บรรทัด แล้วแสดงข้อความนั้นในลำดับกลับกัน",
+    difficulty: "easy",
+    points: 10,
+    hint: [
+      "อาจใช้ split(''), reverse(), join('')",
+      "อ่านข้อความจาก input ให้ครบก่อน",
+    ],
+    exampleInput: "student",
+    exampleOutput: "tneduts",
+    expectedOutput: "tneduts",
+    starter: starterCode,
+  },
+  {
+    id: 2,
+    level: "easy",
+    title: "พิมพ์คำทักทาย",
+    description: "ให้รับชื่อ 1 ชื่อ แล้วพิมพ์คำว่า สวัสดี ตามด้วยชื่อที่รับมา",
+    difficulty: "easy",
+    points: 10,
+    hint: ["ใช้การต่อ string", "ระวังเว้นวรรคหลังคำว่า สวัสดี"],
+    exampleInput: "มินท์",
+    exampleOutput: "สวัสดี มินท์",
+    expectedOutput: "สวัสดี มินท์",
+    starter: starterCode,
+  },
+  {
+    id: 3,
+    level: "medium",
+    title: "แปลงเป็นตัวพิมพ์ใหญ่",
+    description: "อ่านข้อความ 1 บรรทัด แล้วแสดงผลเป็นตัวพิมพ์ใหญ่ทั้งหมด",
+    difficulty: "medium",
+    points: 20,
+    hint: ["ใน JavaScript ใช้ toUpperCase()"],
+    exampleInput: "code playground",
+    exampleOutput: "CODE PLAYGROUND",
+    expectedOutput: "CODE PLAYGROUND",
+    starter: starterCode,
+  },
+  {
+    id: 4,
+    level: "medium",
+    title: "นับจำนวนตัวอักษร",
+    description: "อ่านข้อความ 1 บรรทัด แล้วแสดงจำนวนตัวอักษรทั้งหมด",
+    difficulty: "medium",
+    points: 20,
+    hint: ["ใช้ .length", "ถ้า trim แล้วความยาวจะไม่รวมช่องว่างหัวท้าย"],
+    exampleInput: "hello",
+    exampleOutput: "5",
+    expectedOutput: "5",
+    starter: starterCode,
+  },
+  {
+    id: 5,
+    level: "hard",
+    title: "รวมตัวเลขสองจำนวน",
+    description:
+      "รับตัวเลข 2 จำนวนคั่นด้วยช่องว่างในบรรทัดเดียว แล้วแสดงผลรวมของสองจำนวน",
+    difficulty: "hard",
+    points: 30,
+    hint: ["แยก input ด้วย split(' ')", "แปลงเป็น Number ก่อนบวก"],
+    exampleInput: "5 7",
+    exampleOutput: "12",
+    expectedOutput: "12",
+    starter: starterCode,
+  },
+  {
+    id: 6,
+    level: "hard",
+    title: "ตรวจคำ palindrome",
+    description:
+      "อ่านข้อความ 1 บรรทัด ถ้าอ่านจากหน้าไปหลังและหลังไปหน้าเหมือนกัน ให้แสดง yes ไม่งั้นแสดง no",
+    difficulty: "hard",
+    points: 30,
+    hint: ["เปรียบเทียบข้อความเดิมกับข้อความกลับด้าน"],
+    exampleInput: "level",
+    exampleOutput: "yes",
+    expectedOutput: "yes",
+    starter: starterCode,
+  },
+];
+
+function normalizeText(text) {
+  return String(text).replace(/\r/g, "").trim();
 }
 
-function getStarterForProblem(problem, starterSolutions = {}) {
-  if (!problem) return defaultTemplates.simpleTemplate;
-  if (problem.starter) return problem.starter;
-  if (starterSolutions[problem.id]) return starterSolutions[problem.id];
-  const needsInput = detectNeedsInput(problem.prompt || "");
-  return needsInput
-    ? defaultTemplates.inputTemplate
-    : defaultTemplates.simpleTemplate;
+function getDifficultyLabel(diff) {
+  if (diff === "easy") return "ง่าย";
+  if (diff === "medium") return "ปานกลาง";
+  if (diff === "hard") return "ยาก";
+  return diff;
 }
 
 function App() {
-  // ✅ Hook ต้องอยู่บนสุดของ component
-  const [loggedIn, setLoggedIn] = useState(
-    !!localStorage.getItem('token')
-  );
+  const [levelFilter, setLevelFilter] = useState("all");
+  const [score, setScore] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [code, setCode] = useState(starterCode);
+  const [customOutput, setCustomOutput] = useState("");
+  const [status, setStatus] = useState("idle");
+  const [output, setOutput] = useState("ยังไม่มีผลลัพธ์");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [solvedIds, setSolvedIds] = useState([]);
 
-  // Logic ของ Code Playground เดิม (ย้ายมาจาก function App เดิม)
-  const [problems, setProblems] = useState([]);
-  const [idx, setIdx] = useState(0);
-  const [code, setCode] = useState("");
-  const [running, setRunning] = useState(false);
-  const [result, setResult] = useState(null);
-  const [xp, setXp] = useState(() => Number(localStorage.getItem("xp") || 0));
-  const [streak, setStreak] = useState(
-    () => Number(localStorage.getItem("streak") || 0)
-  );
-  const [customInput, setCustomInput] = useState("");
-  const [revealedHints, setRevealedHints] = useState([]); // เก็บ index ของ hints ที่เปิดแล้วสำหรับโจทย์ปัจจุบัน
-  const total = problems.length || 0;
+  const filteredProblems = useMemo(() => {
+    if (levelFilter === "all") return problemBank;
+    return problemBank.filter((p) => p.level === levelFilter);
+  }, [levelFilter]);
 
-  // โหลดโจทย์และ reset revealedHints
-  async function loadProblems() {
-  try {
-    setResult(null);
-    setIdx(0);
+  const currentProblem = filteredProblems[currentIndex];
 
-    const res = await fetch("http://localhost:8080/api/problems");
-    if (!res.ok) {
-      throw new Error(`โหลดโจทย์ไม่สำเร็จ: ${res.status}`);
-    }
+  const progressPercent = filteredProblems.length
+    ? ((currentIndex + 1) / filteredProblems.length) * 100
+    : 0;
 
-    const data = await res.json();
-    setProblems(data);
-    setCode(getStarterForProblem(data[0], starterSolutions));
-    setRevealedHints([]);
-  } catch (e) {
-    console.error("Load problems error", e);
-  }
-}
+  const solvedCountInFilter = filteredProblems.filter((p) =>
+    solvedIds.includes(p.id)
+  ).length;
 
-  useEffect(() => {
-    loadProblems();
-  }, []);
+  const resetWorkspaceForProblem = (problem) => {
+    setCode(problem?.starter || starterCode);
+    setCustomOutput("");
+    setStatus("idle");
+    setOutput("ยังไม่มีผลลัพธ์");
+    setErrorMessage("");
+  };
 
-  useEffect(() => {
-    const p = problems[idx];
-    if (p) {
-      setCode(getStarterForProblem(p, starterSolutions));
-      setRevealedHints([]); // เปลี่ยนโจทย์ใหม่ รีเซ็ตคำใบ้
-    }
-  }, [idx, problems]);
+  const handleLevelChange = (e) => {
+    const nextLevel = e.target.value;
+    setLevelFilter(nextLevel);
+    setCurrentIndex(0);
 
-  useEffect(() => {
-    localStorage.setItem("xp", xp);
-    localStorage.setItem("streak", streak);
-  }, [xp, streak]);
+    const nextProblems =
+      nextLevel === "all"
+        ? problemBank
+        : problemBank.filter((p) => p.level === nextLevel);
 
-  const currentProblem = useMemo(() => problems[idx], [problems, idx]);
+    resetWorkspaceForProblem(nextProblems[0]);
+  };
 
-  // เปิดคำใบ้ถัดไป (reveal one more)
-  function revealNextHint() {
-    if (!currentProblem || !Array.isArray(currentProblem.hints)) return;
-    const count = currentProblem.hints.length;
-    const nextIndex = revealedHints.length; // เปิด hint ถัดไปคือ index = current revealed length
-    if (nextIndex >= count) return; // ไม่มีใบ้อีก
-    setRevealedHints(prev => [...prev, nextIndex]);
-    // (option) ลด XP เล็กน้อยเมื่อขอใบ้: uncomment ถ้าต้องการ
-    // setXp(prev => Math.max(0, prev - 2));
-  }
+  const handleRestart = () => {
+    setScore(0);
+    setCurrentIndex(0);
+    setSolvedIds([]);
+    const firstProblem =
+      levelFilter === "all"
+        ? problemBank[0]
+        : problemBank.filter((p) => p.level === levelFilter)[0];
+    resetWorkspaceForProblem(firstProblem);
+  };
 
-  // รันโค้ดกับ backend (เหมือนเดิม)
-  async function run(useCustom = false) {
-    console.log('run() called', { useCustom, currentProblemId: currentProblem?.id });
-    if (!currentProblem) {
-      console.warn('no currentProblem, abort run');
+  const handleResetCode = () => {
+    if (!currentProblem) return;
+    setCode(currentProblem.starter || starterCode);
+    setCustomOutput("");
+    setStatus("idle");
+    setOutput("รีเซ็ตโค้ดแล้ว");
+    setErrorMessage("");
+  };
+
+  const handleRun = () => {
+    if (!currentProblem) return;
+
+    setErrorMessage("");
+
+    if (!customOutput.trim()) {
+      setStatus("warning");
+      setOutput(
+        "ยังไม่ได้กรอกผลลัพธ์จำลอง\n\nตอนนี้เวอร์ชันนี้เป็น UI พร้อมใช้ทันที\nให้พิมพ์ผลลัพธ์ที่ต้องการทดสอบในช่อง 'ผลลัพธ์จำลองจากโค้ด' ด้านขวา แล้วกด Run หรือ Submit"
+      );
       return;
     }
-    setRunning(true);
-    setResult(null);
-    try {
-      const body = {
-        problemId: currentProblem.id,
-        sourceCode: code,
-        languageId: 71 // หรือ 63 ขึ้นกับภาษาที่ตั้งไว้ (71 = Python3)
-      };
-      if (useCustom && customInput.trim()) body.customInput = customInput;
-      // -- DEBUG: ใช้ absolute URL ถ้า proxy มีปัญหา --
-      const submitUrl = 'http://localhost:8080/api/submit'; // <-- ถ้าจะทดสอบ local ให้เปลี่ยนเป็น /api/submit-local ตามคำแนะนำด้านล่าง
-      console.log('Sending POST to', submitUrl, 'body:', body);
-      const res = await fetch(submitUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        // เพิ่ม timeout-like behavior (fetch ไม่มี timeout ในเบื้องต้น)
-      });
-      console.log('fetch returned status', res.status);
-      let data;
-      try {
-        data = await res.json();
-      } catch (e) {
-        console.error('failed parsing JSON from response', e);
-        const text = await res.text().catch(()=>'<no-text>');
-        console.log('response text:', text);
-        throw new Error('Invalid JSON response from server');
-      }
-      console.log('submit response data', data);
-      setResult(data);
 
-      if (data.status === "Accepted") {
-        setXp((prev) => prev + 10);
-        setStreak((prev) => prev + 1);
-        setTimeout(() => {
-          if (idx + 1 < total) {
-            setIdx((prev) => prev + 1);
-            setResult(null);
-          } else {
-            setResult({ status: "Completed", message: "คุณทำครบทุกข้อแล้ว!" });
-          }
-        }, 800);
-      } else if (data.status === "Wrong Answer") {
-        setStreak(0);
-      }
-    } catch (e) {
-      console.error('run() caught error', e);
-      setResult({ status: 'Error', message: e.message || String(e) });
-    } finally {
-      setRunning(false);
+    setStatus("running");
+    setTimeout(() => {
+      setStatus("success");
+      setOutput(customOutput);
+    }, 250);
+  };
+
+  const handleSubmit = () => {
+    if (!currentProblem) return;
+
+    const actual = normalizeText(customOutput);
+    const expected = normalizeText(currentProblem.expectedOutput);
+
+    if (!actual) {
+      setStatus("error");
+      setErrorMessage("กรุณากรอกผลลัพธ์จำลองก่อนกด Submit");
+      setOutput("ยังไม่มีผลลัพธ์สำหรับตรวจ");
+      return;
     }
-  }
 
-  if (!loggedIn) {
+    if (actual === expected) {
+      const alreadySolved = solvedIds.includes(currentProblem.id);
+
+      setStatus("success");
+      setErrorMessage("");
+      setOutput(
+        `✅ Correct\n\nExpected: ${currentProblem.expectedOutput}\nYour Output: ${actual}\n\n+${
+          alreadySolved ? 0 : currentProblem.points
+        } คะแนน`
+      );
+
+      if (!alreadySolved) {
+        setSolvedIds((prev) => [...prev, currentProblem.id]);
+        setScore((prev) => prev + currentProblem.points);
+      }
+    } else {
+      setStatus("wrong");
+      setErrorMessage("ผลลัพธ์ยังไม่ตรงกับโจทย์");
+      setOutput(
+        `❌ Wrong Answer\n\nExpected: ${currentProblem.expectedOutput}\nYour Output: ${actual}`
+      );
+    }
+  };
+
+  const handleNextProblem = () => {
+    if (!filteredProblems.length) return;
+    const nextIndex = (currentIndex + 1) % filteredProblems.length;
+    setCurrentIndex(nextIndex);
+    resetWorkspaceForProblem(filteredProblems[nextIndex]);
+  };
+
+  if (!currentProblem) {
     return (
-      <>
-        <Login onLogin={() => setLoggedIn(true)} />
-        <Register />
-      </>
+      <div className="app-shell empty-state">
+        <h1>Code Playground</h1>
+        <p>ไม่พบโจทย์ในระดับที่เลือก</p>
+      </div>
     );
   }
 
   return (
-    <div>
-      {/* เนื้อหาเว็บหลัก */}
-      <h1>Code Playground</h1>
-      <button onClick={() => {
-        localStorage.removeItem('token');
-        setLoggedIn(false);
-      }}>
-        Logout
-      </button>
+    <div className="app-shell">
+      <header className="topbar">
+        <div className="topbar-left">
+          <h1>Code Playground</h1>
+          <p className="topbar-subtitle">
+            ฝึกเขียนโค้ดแบบเห็นผลลัพธ์และความคืบหน้าชัดเจน
+          </p>
+        </div>
 
-      {/* JSX ของ Code Playground เดิม (แทน comment เดิม) */}
-      <div
-        style={{
-          height: "100vh",
-          width: "100vw",
-          background: "#0f0f10",
-          color: "#eaeaea",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        }}
-      >
-        {/* Header */}
-        <header
-          style={{
-            height: 60,
-            padding: "0 18px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            borderBottom: "1px solid #1e1e22",
-            background: "#0b0b0c",
-          }}
-        >
-          <div style={{ fontWeight: 800 }}>Code Playground</div>
-          <div style={{ fontSize: 14 }}>
-            XP: <b style={{ color: "#7dd3fc" }}>{xp}</b> &nbsp; Streak:{" "}
-            <b style={{ color: "#a7f3d0" }}>{streak}</b>
+        <div className="topbar-right">
+          <div className="stat-card">
+            <span className="stat-label">Level</span>
+            <select value={levelFilter} onChange={handleLevelChange}>
+              <option value="all">All</option>
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
           </div>
-        </header>
 
-        {/* Main */}
-        <main
-          style={{
-            flex: 1,
-            display: "grid",
-            gridTemplateColumns: "380px 1fr",
-            gap: 0,
-            background: "#1e1e20",
-          }}
-        >
-          {/* Left column */}
-          <section
-            style={{
-              background: "#161616",
-              padding: 16,
-              boxSizing: "border-box",
-              display: "flex",
-              flexDirection: "column",
-              gap: 12,
-            }}
-          >
-            <div style={{ flex: 1, overflow: "auto" }}>
-              <div style={{ opacity: 0.9, marginBottom: 8 }}>
-                ข้อที่ {idx + 1} / {total}
-              </div>
-              <div
-                style={{
-                  fontWeight: 700,
-                  fontSize: 18,
-                  marginBottom: 8,
-                }}
-              >
-                {currentProblem?.title}
-              </div>
+          <div className="stat-card">
+            <span className="stat-label">Score</span>
+            <strong>{score}</strong>
+          </div>
 
-              {/* Prompt */}
-              <div style={{ marginBottom: 12 }}>
-                {currentProblem ? (
-                  <div
-                    style={{
-                      background: "#0b0b0c",
-                      padding: 12,
-                      borderRadius: 8,
-                      border: "1px solid #222",
-                    }}
-                  >
-                    <ReactMarkdown
-  children={(currentProblem.prompt || "").replace(/\\n/g, "\n")}
-  components={{
-    p: ({ ...props }) => (
-      <p
-        style={{
-          whiteSpace: "pre-wrap",
-          lineHeight: 1.6,
-          margin: 0,
-        }}
-        {...props}
-      />
-    ),
-  }}
-/>
-                  </div>
-                ) : (
-                  <div>กำลังโหลดโจทย์...</div>
-                )}
-              </div>
+          <div className="stat-card">
+            <span className="stat-label">Solved</span>
+            <strong>
+              {solvedCountInFilter}/{filteredProblems.length}
+            </strong>
+          </div>
 
-              {/* Hints UI */}
-              {currentProblem?.hints && Array.isArray(currentProblem.hints) && (
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                    <div style={{ fontWeight: 700 }}>คำใบ้</div>
-                    <div style={{ fontSize: 13, color: "#9ca3af" }}>
-                      {revealedHints.length}/{currentProblem.hints.length}
-                    </div>
-                  </div>
+          <button className="ghost-btn" onClick={handleRestart}>
+            เริ่มรอบใหม่
+          </button>
+        </div>
+      </header>
 
-                  {/* ปุ่มขอใบ้ */}
-                  <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                    <button
-                      onClick={revealNextHint}
-                      disabled={revealedHints.length >= (currentProblem.hints?.length || 0)}
-                      style={{
-                        padding: "8px 10px",
-                        borderRadius: 8,
-                        background: revealedHints.length >= (currentProblem.hints?.length || 0) ? "#2b2b2b" : "#fbbf24",
-                        color: revealedHints.length >= (currentProblem.hints?.length || 0) ? "#9ca3af" : "#111",
-                        border: "none",
-                        cursor: revealedHints.length >= (currentProblem.hints?.length || 0) ? "not-allowed" : "pointer",
-                        fontWeight: 700,
-                      }}
-                    >
-                      ขอใบ้
-                    </button>
+      <section className="progress-section">
+        <div className="progress-text">
+          <span>
+            ข้อที่ {currentIndex + 1} / {filteredProblems.length}
+          </span>
+          <span>{Math.round(progressPercent)}%</span>
+        </div>
+        <div className="progress-bar">
+          <div
+            className="progress-fill"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+      </section>
 
-                    {/* ปุ่มซ่อนคำใบ้ทั้งหมด (reset) */}
-                    <button
-                      onClick={() => setRevealedHints([])}
-                      disabled={revealedHints.length === 0}
-                      style={{
-                        padding: "8px 10px",
-                        borderRadius: 8,
-                        background: "#2b2b2b",
-                        color: "#eaeaea",
-                        border: "1px solid #333",
-                        cursor: revealedHints.length === 0 ? "not-allowed" : "pointer",
-                        fontWeight: 600,
-                      }}
-                    >
-                      ซ่อนคำใบ้
-                    </button>
-                  </div>
-
-                  {/* แสดงคำใบ้ที่เปิดแล้ว */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {revealedHints.map((hintIndex) => (
-                      <div key={hintIndex} style={{ background: "#0b0b0c", padding: 10, borderRadius: 8, border: "1px solid #222", fontSize: 13 }}>
-                        {currentProblem.hints[hintIndex]}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+      <main className="workspace">
+        <aside className="panel problem-panel">
+          <div className="panel-header">
+            <div>
+              <div className="eyebrow">Problem</div>
+              <h2>{currentProblem.title}</h2>
             </div>
 
-            {/* Controls */}
-            <div style={{ display: "flex", gap: 8 }}>
-              <button
-                onClick={() => run(false)}
-                disabled={running}
-                style={{
-                  flex: 1,
-                  padding: 10,
-                  borderRadius: 8,
-                  background: "#eaeaea",
-                  color: "#111",
-                  fontWeight: 700,
-                  cursor: running ? "not-allowed" : "pointer",
-                }}
-              >
-                {running ? "Running…" : "Run"}
+            <div className={`difficulty-badge ${currentProblem.difficulty}`}>
+              {getDifficultyLabel(currentProblem.difficulty)}
+            </div>
+          </div>
+
+          <div className="meta-row">
+            <span>คะแนนข้อนี้: {currentProblem.points}</span>
+            <span>Level: {currentProblem.level}</span>
+          </div>
+
+          <div className="card-block">
+            <p>{currentProblem.description}</p>
+          </div>
+
+          <div className="section-block">
+            <h3>คำใบ้</h3>
+            <ul>
+              {currentProblem.hint.map((item, index) => (
+                <li key={index}>{item}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="section-block">
+            <h3>ตัวอย่าง</h3>
+            <div className="example-box">
+              <div>
+                <strong>Input</strong>
+                <pre>{currentProblem.exampleInput}</pre>
+              </div>
+              <div>
+                <strong>Output</strong>
+                <pre>{currentProblem.exampleOutput}</pre>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <section className="panel editor-panel">
+          <div className="panel-header">
+            <div>
+              <div className="eyebrow">Editor</div>
+              <h2>JavaScript</h2>
+            </div>
+
+            <div className="toolbar">
+              <button className="toolbar-btn secondary" onClick={handleRun}>
+                Run
               </button>
-              <button
-                onClick={() => run(true)}
-                disabled={running}
-                style={{
-                  flex: 1,
-                  padding: 10,
-                  borderRadius: 8,
-                  background: "#2b2b2b",
-                  color: "#eaeaea",
-                  border: "1px solid #333",
-                  cursor: running ? "not-allowed" : "pointer",
-                }}
-              >
-                Run (with input)
+              <button className="toolbar-btn primary" onClick={handleSubmit}>
+                Submit
+              </button>
+              <button className="toolbar-btn secondary" onClick={handleResetCode}>
+                Reset
               </button>
             </div>
+          </div>
 
-            {/* Input + Result */}
-            <div style={{ display: "grid", gap: 8 }}>
-              <textarea
-                value={customInput}
-                onChange={(e) => setCustomInput(e.target.value)}
-                placeholder="(ใส่ input เพื่อทดสอบเอง — ใช้ปุ่ม Run (with input))"
-                style={{
-                  height: 80,
-                  resize: "none",
-                  padding: 8,
-                  borderRadius: 8,
-                  background: "#0b0b0c",
-                  color: "#eaeaea",
-                  border: "1px solid #222",
-                }}
-              />
+          <div className="editor-frame">
+            <textarea
+              className="code-editor"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              spellCheck="false"
+            />
+          </div>
 
-              <div
-                style={{
-                  background: "#0b0b0c",
-                  padding: 10,
-                  borderRadius: 8,
-                  border: "1px solid #222",
-                  height: 160,
-                  overflow: "auto",
-                }}
-              >
-                <div style={{ fontWeight: 700, marginBottom: 6 }}>ผลการทดสอบ</div>
-                {!result && <div style={{ opacity: 0.7 }}>กด Run เพื่อประมวลผล</div>}
-                {result && (
-                  <div style={{ fontSize: 13 }}>
-                    <div>
-                      สถานะ:{" "}
-                      <b
-                        style={{
-                          color:
-                            result.status === "Accepted"
-                              ? "#34d399"
-                              : result.status === "Wrong Answer"
-                              ? "#fb7185"
-                              : "#f59e0b",
-                        }}
-                      >
-                        {result.status}
-                      </b>
-                    </div>
+          <div className="editor-footer">
+            <button className="next-btn" onClick={handleNextProblem}>
+              โจทย์ถัดไป
+            </button>
+          </div>
+        </section>
 
-                    {Array.isArray(result.cases) && (
-                      <div style={{ marginTop: 6 }}>
-                        ผ่าน {result.cases.filter((c) => c.pass).length} / {result.cases.length} เคส
-                      </div>
-                    )}
-
-                    {result.cases?.map((c, i) => (
-                      <details key={i} style={{ marginTop: 8, background: "#0b0b0c", padding: 8, borderRadius: 6 }}>
-                        <summary>เคส {i + 1}: {c.pass ? 'ผ่าน' : 'ไม่ผ่าน'}</summary>
-                        <pre style={{ whiteSpace: 'pre-wrap', marginTop: 6 }}>{`Input:
-${c.input}
-
-Expected:
-${c.expected}
-
-Your Output:
-${c.out}
-
-stderr:
-${c.stderr || ''}`}</pre>
-                      </details>
-                    ))}
-
-                    {result.hints?.length > 0 && (
-                      <div style={{ marginTop: 8 }}>
-                        <div style={{ fontWeight: 700 }}>คำแนะนำจากระบบ</div>
-                        <ul style={{ marginLeft: 16 }}>
-                          {result.hints.map((h, i) => <li key={i}>{h}</li>)}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+        <aside className="panel output-panel">
+          <div className="panel-header">
+            <div>
+              <div className="eyebrow">Output</div>
+              <h2>ผลลัพธ์และการตรวจ</h2>
             </div>
-          </section>
 
-          {/* Right column - Editor */}
-          <section
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              height: "100%",
-            }}
-          >
-            <div
-              style={{
-                padding: 10,
-                borderBottom: "1px solid #1a1a1c",
-                background: "#0b0b0c",
-              }}
-            >
-              Python 3
+            <div className={`status-badge ${status}`}>
+              {status === "idle" && "ยังไม่รัน"}
+              {status === "running" && "กำลังรัน"}
+              {status === "success" && "สำเร็จ"}
+              {status === "wrong" && "ยังไม่ถูก"}
+              {status === "warning" && "รอผลลัพธ์"}
+              {status === "error" && "เกิดข้อผิดพลาด"}
             </div>
-            <div style={{ flex: 1, minHeight: 0 }}>
-              <Editor
-                height="100%"
-                defaultLanguage="python"
-                value={code}
-                onChange={(v) => setCode(v)}
-                theme="vs-dark"
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 14,
-                  scrollBeyondLastLine: false,
-                }}
-              />
+          </div>
+
+          <div className="section-block">
+            <h3>ผลลัพธ์จำลองจากโค้ด</h3>
+            <textarea
+              className="mock-output-input"
+              value={customOutput}
+              onChange={(e) => setCustomOutput(e.target.value)}
+              placeholder="พิมพ์ output ที่โค้ดของคุณควรแสดง เช่น tneduts"
+            />
+          </div>
+
+          <div className="section-block">
+            <h3>System Output</h3>
+            <div className="output-box">
+              <pre>{output}</pre>
             </div>
-          </section>
-        </main>
-      </div>
+          </div>
+
+          <div className="section-block">
+            <h3>Error</h3>
+            <div className={`error-box ${errorMessage ? "has-error" : ""}`}>
+              <pre>{errorMessage || "ไม่มีข้อผิดพลาด"}</pre>
+            </div>
+          </div>
+        </aside>
+      </main>
     </div>
   );
 }

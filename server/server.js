@@ -31,10 +31,16 @@ function judge0Headers() {
 
 app.get("/api/problems", (req, res) => {
   try {
-    activeProblems = generateProblems(3);
+    const difficulty = req.query.difficulty || "all";
+    activeProblems = generateProblems(3, difficulty);
 
     const safeProblems = activeProblems.map(({ tests, validator, ...rest }) => rest);
-    res.json(safeProblems);
+
+    res.json({
+      difficulty,
+      total: safeProblems.length,
+      problems: safeProblems
+    });
   } catch (error) {
     console.error("GET /api/problems error:", error);
     res.status(500).json({

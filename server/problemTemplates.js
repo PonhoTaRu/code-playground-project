@@ -7,6 +7,7 @@ const input = fs.readFileSync(0, "utf8").trim();
 const problemTemplates = [
   {
     templateId: "hello-name",
+    difficulty: "easy",
     type: "template",
     title: "ทักทายชื่อผู้ใช้",
     prompt: "อ่านชื่อจาก input 1 บรรทัด แล้วพิมพ์ว่า\nสวัสดี <ชื่อ>",
@@ -17,11 +18,13 @@ const problemTemplates = [
     starter: starterJS,
     language: "javascript",
     generator: "helloName",
-    validator: { type: "exact" }
+    validator: { type: "exact" },
+    score: 10
   },
 
   {
     templateId: "sum-two-numbers",
+    difficulty: "easy",
     type: "template",
     title: "ผลบวกของตัวเลขสองจำนวน",
     prompt: "รับตัวเลข 2 จำนวน คั่นด้วยช่องว่าง แล้วแสดงผลรวม",
@@ -32,11 +35,13 @@ const problemTemplates = [
     starter: starterJS,
     language: "javascript",
     generator: "sumTwoNumbers",
-    validator: { type: "number" }
+    validator: { type: "number" },
+    score: 10
   },
 
   {
     templateId: "multiply-two-numbers",
+    difficulty: "easy",
     type: "template",
     title: "ผลคูณของตัวเลขสองจำนวน",
     prompt: "รับตัวเลข 2 จำนวน คั่นด้วยช่องว่าง แล้วแสดงผลคูณ",
@@ -47,11 +52,13 @@ const problemTemplates = [
     starter: starterJS,
     language: "javascript",
     generator: "multiplyTwoNumbers",
-    validator: { type: "number" }
+    validator: { type: "number" },
+    score: 10
   },
 
   {
     templateId: "average-three-numbers",
+    difficulty: "medium",
     type: "template",
     title: "ค่าเฉลี่ยของตัวเลขสามจำนวน",
     prompt: "รับตัวเลข 3 จำนวน คั่นด้วยช่องว่าง แล้วแสดงค่าเฉลี่ย",
@@ -62,11 +69,13 @@ const problemTemplates = [
     starter: starterJS,
     language: "javascript",
     generator: "averageThreeNumbers",
-    validator: { type: "number" }
+    validator: { type: "number" },
+    score: 20
   },
 
   {
     templateId: "max-of-two",
+    difficulty: "easy",
     type: "template",
     title: "หาค่าที่มากกว่า",
     prompt: "รับตัวเลข 2 จำนวน คั่นด้วยช่องว่าง แล้วแสดงค่าที่มากกว่า",
@@ -77,11 +86,13 @@ const problemTemplates = [
     starter: starterJS,
     language: "javascript",
     generator: "maxOfTwo",
-    validator: { type: "number" }
+    validator: { type: "number" },
+    score: 10
   },
 
   {
     templateId: "even-or-odd",
+    difficulty: "easy",
     type: "template",
     title: "เลขคู่หรือเลขคี่",
     prompt: "รับจำนวนเต็ม 1 จำนวน แล้วพิมพ์ว่า Even ถ้าเป็นเลขคู่ หรือ Odd ถ้าเป็นเลขคี่",
@@ -92,11 +103,13 @@ const problemTemplates = [
     starter: starterJS,
     language: "javascript",
     generator: "evenOrOdd",
-    validator: { type: "exact" }
+    validator: { type: "exact" },
+    score: 10
   },
 
   {
     templateId: "celsius-to-fahrenheit",
+    difficulty: "medium",
     type: "template",
     title: "แปลงอุณหภูมิ Celsius เป็น Fahrenheit",
     prompt: "รับค่าอุณหภูมิหน่วยเซลเซียส 1 จำนวน แล้วแสดงผลเป็นฟาเรนไฮต์ โดยใช้สูตร (C × 9/5) + 32",
@@ -107,11 +120,13 @@ const problemTemplates = [
     starter: starterJS,
     language: "javascript",
     generator: "celsiusToFahrenheit",
-    validator: { type: "number" }
+    validator: { type: "number" },
+    score: 20
   },
 
   {
     templateId: "rectangle-area",
+    difficulty: "easy",
     type: "template",
     title: "หาพื้นที่สี่เหลี่ยมผืนผ้า",
     prompt: "รับค่าความกว้างและความยาว 2 จำนวน คั่นด้วยช่องว่าง แล้วแสดงพื้นที่สี่เหลี่ยมผืนผ้า",
@@ -122,11 +137,13 @@ const problemTemplates = [
     starter: starterJS,
     language: "javascript",
     generator: "rectangleArea",
-    validator: { type: "number" }
+    validator: { type: "number" },
+    score: 10
   },
 
   {
     templateId: "string-length",
+    difficulty: "medium",
     type: "template",
     title: "นับจำนวนตัวอักษร",
     prompt: "อ่านข้อความ 1 บรรทัด แล้วแสดงจำนวนตัวอักษรทั้งหมด",
@@ -137,11 +154,13 @@ const problemTemplates = [
     starter: starterJS,
     language: "javascript",
     generator: "stringLength",
-    validator: { type: "number" }
+    validator: { type: "number" },
+    score: 20
   },
 
   {
     templateId: "reverse-string",
+    difficulty: "hard",
     type: "template",
     title: "กลับลำดับข้อความ",
     prompt: "อ่านข้อความ 1 บรรทัด แล้วแสดงข้อความนั้นในลำดับกลับกัน",
@@ -152,7 +171,8 @@ const problemTemplates = [
     starter: starterJS,
     language: "javascript",
     generator: "reverseString",
-    validator: { type: "exact" }
+    validator: { type: "exact" },
+    score: 30
   }
 ];
 
