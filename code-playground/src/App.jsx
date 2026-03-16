@@ -106,6 +106,11 @@ function getDifficultyLabel(diff) {
   return diff;
 }
 
+function getRandomProblems(problems, count = 3) {
+  const shuffled = [...problems].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, Math.min(count, shuffled.length));
+}
+
 function App() {
   const [levelFilter, setLevelFilter] = useState("all");
   const [score, setScore] = useState(0);
@@ -121,6 +126,15 @@ function App() {
   const [authMode, setAuthMode] = useState("login");
   const [username, setUsername] = useState("");
 
+  const baseProblems = useMemo(() => {
+    if (levelFilter === "all") return problemBank;
+    return problemBank.filter((p) => p.level === levelFilter);
+  }, [levelFilter]);
+
+  const [roundProblems, setRoundProblems] = useState(() =>
+    getRandomProblems(problemBank, 3)
+  );
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     const savedUsername = localStorage.getItem("username");
@@ -131,18 +145,28 @@ function App() {
     }
   }, []);
 
-  const filteredProblems = useMemo(() => {
-    if (levelFilter === "all") return problemBank;
-    return problemBank.filter((p) => p.level === levelFilter);
-  }, [levelFilter]);
+  useEffect(() => {
+    const nextRound = getRandomProblems(baseProblems, 3);
+    setRoundProblems(nextRound);
+    setCurrentIndex(0);
+    setSolvedIds([]);
+    setScore(0);
 
-  const currentProblem = filteredProblems[currentIndex];
+    const firstProblem = nextRound[0];
+    setCode(firstProblem?.starter || starterCode);
+    setCustomOutput("");
+    setStatus("idle");
+    setOutput("ยังไม่มีผลลัพธ์");
+    setErrorMessage("");
+  }, [baseProblems]);
 
-  const progressPercent = filteredProblems.length
-    ? ((currentIndex + 1) / filteredProblems.length) * 100
+  const currentProblem = roundProblems[currentIndex];
+
+  const progressPercent = roundProblems.length
+    ? ((currentIndex + 1) / roundProblems.length) * 100
     : 0;
 
-  const solvedCountInFilter = filteredProblems.filter((p) =>
+  const solvedCountInRound = roundProblems.filter((p) =>
     solvedIds.includes(p.id)
   ).length;
 
@@ -154,20 +178,9 @@ function App() {
     setErrorMessage("");
   };
 
-  const handleLevelChange = (e) => {
-    const nextLevel = e.target.value;
-    setLevelFilter(nextLevel);
-    setCurrentIndex(0);
-
-    const nextProblems =
-      nextLevel === "all"
-        ? problemBank
-        : problemBank.filter((p) => p.level === nextLevel);
-
-    resetWorkspaceForProblem(nextProblems[0]);
-  };
-
-  const handleRestart = () => {
+  const startNewRound = () => {
+    const nextRound = getRandomProblems(baseProblems, 3);
+    setRoundProblems(nextRound);
     setScore(0);
     setCurrentIndex(0);
     setSolvedIds([]);
@@ -176,12 +189,16 @@ function App() {
     setStatus("idle");
     setCustomOutput("");
 
-    const firstProblem =
-      levelFilter === "all"
-        ? problemBank[0]
-        : problemBank.filter((p) => p.level === levelFilter)[0];
-
+    const firstProblem = nextRound[0];
     setCode(firstProblem?.starter || starterCode);
+  };
+
+  const handleLevelChange = (e) => {
+    setLevelFilter(e.target.value);
+  };
+
+  const handleRestart = () => {
+    startNewRound();
   };
 
   const handleResetCode = () => {
@@ -251,10 +268,19 @@ function App() {
   };
 
   const handleNextProblem = () => {
-    if (!filteredProblems.length) return;
-    const nextIndex = (currentIndex + 1) % filteredProblems.length;
+    if (!roundProblems.length) return;
+
+    const nextIndex = currentIndex + 1;
+
+    if (nextIndex >= roundProblems.length) {
+      setStatus("idle");
+      setOutput("จบรอบแล้ว กด 'เริ่มรอบใหม่' เพื่อสุ่มโจทย์ชุดใหม่");
+      setErrorMessage("");
+      return;
+    }
+
     setCurrentIndex(nextIndex);
-    resetWorkspaceForProblem(filteredProblems[nextIndex]);
+    resetWorkspaceForProblem(roundProblems[nextIndex]);
   };
 
   const handleLoginSuccess = (name) => {
@@ -351,7 +377,7 @@ function App() {
           <div className="stat-card">
             <span className="stat-label">Solved</span>
             <strong>
-              {solvedCountInFilter}/{filteredProblems.length}
+              {solvedCountInRound}/{roundProblems.length}
             </strong>
           </div>
 
@@ -368,7 +394,7 @@ function App() {
       <section className="progress-section">
         <div className="progress-text">
           <span>
-            ข้อที่ {currentIndex + 1} / {filteredProblems.length}
+            ข้อที่ {currentIndex + 1} / {roundProblems.length}
           </span>
           <span>{Math.round(progressPercent)}%</span>
         </div>
@@ -440,7 +466,10 @@ function App() {
               <button className="toolbar-btn primary" onClick={handleSubmit}>
                 Submit
               </button>
-              <button className="toolbar-btn secondary" onClick={handleResetCode}>
+              <button
+                className="toolbar-btn secondary"
+                onClick={handleResetCode}
+              >
                 Reset
               </button>
             </div>
