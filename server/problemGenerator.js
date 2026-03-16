@@ -24,6 +24,8 @@ function makeProblem(template, samples, tests, promptOverride = null) {
     templateId: template.templateId,
     difficulty: template.difficulty || "easy",
     score: template.score || 10,
+    revealDelaySec: template.revealDelaySec || 90,
+    exampleSolution: template.exampleSolution || "",
     title: template.title,
     prompt: promptOverride || template.prompt,
     hints: template.hints || [],

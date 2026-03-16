@@ -3,142 +3,50 @@ import "./App.css";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 
-const starterCode = `const fs = require("fs");
-const input = fs.readFileSync(0, "utf8").trim();
-
-// เขียนโค้ดที่นี่
-`;
-
-const problemBank = [
-  {
-    id: 1,
-    level: "easy",
-    title: "กลับลำดับข้อความ",
-    description: "อ่านข้อความ 1 บรรทัด แล้วแสดงข้อความนั้นในลำดับกลับกัน",
-    difficulty: "easy",
-    points: 10,
-    hint: [
-      "อาจใช้ split(''), reverse(), join('')",
-      "อ่านข้อความจาก input ให้ครบก่อน",
-    ],
-    exampleInput: "student",
-    exampleOutput: "tneduts",
-    expectedOutput: "tneduts",
-    starter: starterCode,
-  },
-  {
-    id: 2,
-    level: "easy",
-    title: "พิมพ์คำทักทาย",
-    description: "ให้รับชื่อ 1 ชื่อ แล้วพิมพ์คำว่า สวัสดี ตามด้วยชื่อที่รับมา",
-    difficulty: "easy",
-    points: 10,
-    hint: ["ใช้การต่อ string", "ระวังเว้นวรรคหลังคำว่า สวัสดี"],
-    exampleInput: "มินท์",
-    exampleOutput: "สวัสดี มินท์",
-    expectedOutput: "สวัสดี มินท์",
-    starter: starterCode,
-  },
-  {
-    id: 3,
-    level: "medium",
-    title: "แปลงเป็นตัวพิมพ์ใหญ่",
-    description: "อ่านข้อความ 1 บรรทัด แล้วแสดงผลเป็นตัวพิมพ์ใหญ่ทั้งหมด",
-    difficulty: "medium",
-    points: 20,
-    hint: ["ใน JavaScript ใช้ toUpperCase()"],
-    exampleInput: "code playground",
-    exampleOutput: "CODE PLAYGROUND",
-    expectedOutput: "CODE PLAYGROUND",
-    starter: starterCode,
-  },
-  {
-    id: 4,
-    level: "medium",
-    title: "นับจำนวนตัวอักษร",
-    description: "อ่านข้อความ 1 บรรทัด แล้วแสดงจำนวนตัวอักษรทั้งหมด",
-    difficulty: "medium",
-    points: 20,
-    hint: ["ใช้ .length", "ถ้า trim แล้วความยาวจะไม่รวมช่องว่างหัวท้าย"],
-    exampleInput: "hello",
-    exampleOutput: "5",
-    expectedOutput: "5",
-    starter: starterCode,
-  },
-  {
-    id: 5,
-    level: "hard",
-    title: "รวมตัวเลขสองจำนวน",
-    description:
-      "รับตัวเลข 2 จำนวนคั่นด้วยช่องว่างในบรรทัดเดียว แล้วแสดงผลรวมของสองจำนวน",
-    difficulty: "hard",
-    points: 30,
-    hint: ["แยก input ด้วย split(' ')", "แปลงเป็น Number ก่อนบวก"],
-    exampleInput: "5 7",
-    exampleOutput: "12",
-    expectedOutput: "12",
-    starter: starterCode,
-  },
-  {
-    id: 6,
-    level: "hard",
-    title: "ตรวจคำ palindrome",
-    description:
-      "อ่านข้อความ 1 บรรทัด ถ้าอ่านจากหน้าไปหลังและหลังไปหน้าเหมือนกัน ให้แสดง yes ไม่งั้นแสดง no",
-    difficulty: "hard",
-    points: 30,
-    hint: ["เปรียบเทียบข้อความเดิมกับข้อความกลับด้าน"],
-    exampleInput: "level",
-    exampleOutput: "yes",
-    expectedOutput: "yes",
-    starter: starterCode,
-  },
-];
-
-function normalizeText(text) {
-  return String(text).replace(/\r/g, "").trim();
-}
+const fallbackStarter = "";
 
 function getDifficultyLabel(diff) {
   if (diff === "easy") return "ง่าย";
   if (diff === "medium") return "ปานกลาง";
   if (diff === "hard") return "ยาก";
-  return diff;
-}
-
-function getRandomProblems(problems, count = 3) {
-  const shuffled = [...problems].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, Math.min(count, shuffled.length));
+  return diff || "ทั่วไป";
 }
 
 function App() {
-  const [levelFilter, setLevelFilter] = useState("all");
-  const [score, setScore] = useState(0);
+  const [difficulty, setDifficulty] = useState("all");
+  const [problems, setProblems] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [code, setCode] = useState(starterCode);
-  const [customOutput, setCustomOutput] = useState("");
+  const [code, setCode] = useState(fallbackStarter);
   const [status, setStatus] = useState("idle");
   const [output, setOutput] = useState("ยังไม่มีผลลัพธ์");
   const [errorMessage, setErrorMessage] = useState("");
+  const [score, setScore] = useState(0);
   const [solvedIds, setSolvedIds] = useState([]);
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authMode, setAuthMode] = useState("login");
   const [username, setUsername] = useState("");
 
-  const baseProblems = useMemo(() => {
-    if (levelFilter === "all") return problemBank;
-    return problemBank.filter((p) => p.level === levelFilter);
-  }, [levelFilter]);
+  // hint / solution system
+  const [timeLeft, setTimeLeft] = useState(30);
+  const [showHintCount, setShowHintCount] = useState(0);
+  const [showRevealButton, setShowRevealButton] = useState(false);
+  const [showSolution, setShowSolution] = useState(false);
+  const [usedSolution, setUsedSolution] = useState(false);
 
-  const [roundProblems, setRoundProblems] = useState(() =>
-    getRandomProblems(problemBank, 3)
+  const currentProblem = useMemo(
+    () => problems[currentIndex] || null,
+    [problems, currentIndex]
   );
+
+  const total = problems.length;
+  const progressPercent = total ? ((currentIndex + 1) / total) * 100 : 0;
+  const solvedCountInRound = problems.filter((p) => solvedIds.includes(p.id)).length;
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     const savedUsername = localStorage.getItem("username");
-
     if (token) {
       setIsLoggedIn(true);
       setUsername(savedUsername || "");
@@ -146,159 +54,252 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const nextRound = getRandomProblems(baseProblems, 3);
-    setRoundProblems(nextRound);
-    setCurrentIndex(0);
-    setSolvedIds([]);
-    setScore(0);
+    if (!isLoggedIn) return;
+    loadProblems(difficulty);
+  }, [difficulty, isLoggedIn]);
 
-    const firstProblem = nextRound[0];
-    setCode(firstProblem?.starter || starterCode);
-    setCustomOutput("");
-    setStatus("idle");
-    setOutput("ยังไม่มีผลลัพธ์");
-    setErrorMessage("");
-  }, [baseProblems]);
-
-  const currentProblem = roundProblems[currentIndex];
-
-  const progressPercent = roundProblems.length
-    ? ((currentIndex + 1) / roundProblems.length) * 100
-    : 0;
-
-  const solvedCountInRound = roundProblems.filter((p) =>
-    solvedIds.includes(p.id)
-  ).length;
-
-  const resetWorkspaceForProblem = (problem) => {
-    setCode(problem?.starter || starterCode);
-    setCustomOutput("");
-    setStatus("idle");
-    setOutput("ยังไม่มีผลลัพธ์");
-    setErrorMessage("");
-  };
-
-  const startNewRound = () => {
-    const nextRound = getRandomProblems(baseProblems, 3);
-    setRoundProblems(nextRound);
-    setScore(0);
-    setCurrentIndex(0);
-    setSolvedIds([]);
-    setOutput("ยังไม่มีผลลัพธ์");
-    setErrorMessage("");
-    setStatus("idle");
-    setCustomOutput("");
-
-    const firstProblem = nextRound[0];
-    setCode(firstProblem?.starter || starterCode);
-  };
-
-  const handleLevelChange = (e) => {
-    setLevelFilter(e.target.value);
-  };
-
-  const handleRestart = () => {
-    startNewRound();
-  };
-
-  const handleResetCode = () => {
+  useEffect(() => {
     if (!currentProblem) return;
-    setCode(currentProblem.starter || starterCode);
-    setCustomOutput("");
+
+    setCode("");
+    setStatus("idle");
+    setOutput("ยังไม่มีผลลัพธ์");
+    setErrorMessage("");
+
+    setTimeLeft(currentProblem.revealDelaySec || 30);
+    setShowHintCount(0);
+    setShowRevealButton(false);
+    setShowSolution(false);
+    setUsedSolution(false);
+  }, [currentProblem]);
+
+  useEffect(() => {
+    if (!currentProblem) return;
+
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setShowRevealButton(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [currentProblem]);
+
+  useEffect(() => {
+    if (!currentProblem) return;
+
+    const total = currentProblem.revealDelaySec || 30;
+    const elapsed = total - timeLeft;
+    const hintLevel = Math.floor(elapsed / 10);
+
+    setShowHintCount(Math.max(0, hintLevel));
+  }, [timeLeft, currentProblem]);
+
+  async function loadProblems(level = "all") {
+    try {
+      setErrorMessage("");
+      setStatus("idle");
+      setOutput("กำลังโหลดโจทย์...");
+      setProblems([]);
+      setCurrentIndex(0);
+      setSolvedIds([]);
+
+      const res = await fetch(`http://localhost:8080/api/problems?difficulty=${level}`);
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`โหลดโจทย์ไม่สำเร็จ (${res.status}): ${text}`);
+      }
+
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : data.problems || [];
+
+      if (!Array.isArray(list) || list.length === 0) {
+        throw new Error("ไม่พบรายการโจทย์จาก backend");
+      }
+
+      setProblems(list);
+      setCurrentIndex(0);
+      setOutput("ยังไม่มีผลลัพธ์");
+    } catch (error) {
+      console.error("loadProblems error:", error);
+      setProblems([]);
+      setErrorMessage(error.message || "โหลดโจทย์ไม่สำเร็จ");
+      setStatus("error");
+      setOutput("โหลดโจทย์ไม่สำเร็จ");
+    }
+  }
+
+  function handleRestart() {
+    loadProblems(difficulty);
+  }
+
+  function handleResetCode() {
+    if (!currentProblem) return;
+    setCode(currentProblem.starter || fallbackStarter);
     setStatus("idle");
     setOutput("รีเซ็ตโค้ดแล้ว");
     setErrorMessage("");
-  };
+  }
 
-  const handleRun = () => {
+  async function handleRun() {
     if (!currentProblem) return;
 
-    setErrorMessage("");
+    try {
+      setLoadingSubmit(true);
+      setStatus("running");
+      setErrorMessage("");
 
-    if (!customOutput.trim()) {
-      setStatus("warning");
-      setOutput(
-        "ยังไม่ได้กรอกผลลัพธ์จำลอง\n\nตอนนี้เวอร์ชันนี้เป็น UI พร้อมใช้ทันที\nให้พิมพ์ผลลัพธ์ที่ต้องการทดสอบในช่อง 'ผลลัพธ์จำลองจากโค้ด' ด้านขวา แล้วกด Run หรือ Submit"
-      );
-      return;
-    }
+      const res = await fetch("http://localhost:8080/api/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          problemId: currentProblem.id,
+          sourceCode: code,
+          languageId: 63,
+          customInput: currentProblem.samples?.[0]?.input || ""
+        })
+      });
 
-    setStatus("running");
-    setTimeout(() => {
-      setStatus("success");
-      setOutput(customOutput);
-    }, 250);
-  };
+      const data = await res.json();
 
-  const handleSubmit = () => {
-    if (!currentProblem) return;
+      if (!res.ok) {
+        throw new Error(data?.message || data?.error || "Run ไม่สำเร็จ");
+      }
 
-    const actual = normalizeText(customOutput);
-    const expected = normalizeText(currentProblem.expectedOutput);
-
-    if (!actual) {
+      const firstCase = data.cases?.[0];
+      setStatus(data.status === "Error" ? "error" : "success");
+      setOutput(firstCase?.out || firstCase?.stderr || "รันเสร็จแล้ว");
+      setErrorMessage(firstCase?.stderr || "");
+    } catch (error) {
+      console.error("handleRun error:", error);
       setStatus("error");
-      setErrorMessage("กรุณากรอกผลลัพธ์จำลองก่อนกด Submit");
-      setOutput("ยังไม่มีผลลัพธ์สำหรับตรวจ");
-      return;
+      setErrorMessage(error.message || "Run ไม่สำเร็จ");
+      setOutput("เกิดข้อผิดพลาดระหว่างรัน");
+    } finally {
+      setLoadingSubmit(false);
     }
+  }
 
-    if (actual === expected) {
+  async function handleSubmit() {
+    if (!currentProblem) return;
+
+    try {
+      setLoadingSubmit(true);
+      setStatus("running");
+      setErrorMessage("");
+
+      const res = await fetch("http://localhost:8080/api/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          problemId: currentProblem.id,
+          sourceCode: code,
+          languageId: 63
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.message || data?.error || "Submit ไม่สำเร็จ");
+      }
+
+      const accepted = data.status === "Accepted";
       const alreadySolved = solvedIds.includes(currentProblem.id);
 
-      setStatus("success");
-      setErrorMessage("");
-      setOutput(
-        `✅ Correct\n\nExpected: ${currentProblem.expectedOutput}\nYour Output: ${actual}\n\n+${
-          alreadySolved ? 0 : currentProblem.points
-        } คะแนน`
-      );
+      if (accepted) {
+        setStatus("success");
+        setErrorMessage("");
 
-      if (!alreadySolved) {
-        setSolvedIds((prev) => [...prev, currentProblem.id]);
-        setScore((prev) => prev + currentProblem.points);
+        const rendered = (data.cases || [])
+          .map(
+            (c, i) =>
+              `Test #${i + 1}
+Input: ${c.input}
+Expected: ${c.expected}
+Actual: ${c.out}
+Status: ${c.pass ? "Passed" : "Failed"}`
+          )
+          .join("\n\n");
+
+        setOutput(`✅ Accepted\n\n${rendered}`);
+
+        if (!alreadySolved) {
+          let earned = currentProblem.score || 0;
+          if (usedSolution) earned = Math.floor(earned / 2);
+
+          setSolvedIds((prev) => [...prev, currentProblem.id]);
+          setScore((prev) => prev + earned);
+
+          if (usedSolution) {
+            setOutput(
+              `✅ Accepted\n\nได้คะแนน ${earned} (ลดครึ่งหนึ่งเพราะใช้เฉลย)\n\n${rendered}`
+            );
+          }
+        }
+      } else {
+        setStatus(data.status === "Error" ? "error" : "wrong");
+
+        const rendered = (data.cases || [])
+          .map(
+            (c, i) =>
+              `Test #${i + 1}
+Input: ${c.input}
+Expected: ${c.expected}
+Actual: ${c.out}
+Status: ${c.pass ? "Passed" : "Failed"}${c.stderr ? `\nstderr: ${c.stderr}` : ""}`
+          )
+          .join("\n\n");
+
+        setOutput(rendered || "คำตอบยังไม่ถูกต้อง");
+        setErrorMessage((data.hints || []).join("\n") || "");
       }
-    } else {
-      setStatus("wrong");
-      setErrorMessage("ผลลัพธ์ยังไม่ตรงกับโจทย์");
-      setOutput(
-        `❌ Wrong Answer\n\nExpected: ${currentProblem.expectedOutput}\nYour Output: ${actual}`
-      );
+    } catch (error) {
+      console.error("handleSubmit error:", error);
+      setStatus("error");
+      setErrorMessage(error.message || "Submit ไม่สำเร็จ");
+      setOutput("เกิดข้อผิดพลาดระหว่างส่งตรวจ");
+    } finally {
+      setLoadingSubmit(false);
     }
-  };
+  }
 
-  const handleNextProblem = () => {
-    if (!roundProblems.length) return;
-
+  function handleNextProblem() {
     const nextIndex = currentIndex + 1;
-
-    if (nextIndex >= roundProblems.length) {
+    if (nextIndex >= total) {
       setStatus("idle");
       setOutput("จบรอบแล้ว กด 'เริ่มรอบใหม่' เพื่อสุ่มโจทย์ชุดใหม่");
       setErrorMessage("");
       return;
     }
-
     setCurrentIndex(nextIndex);
-    resetWorkspaceForProblem(roundProblems[nextIndex]);
-  };
+  }
 
-  const handleLoginSuccess = (name) => {
+  function handleLoginSuccess(name) {
     setIsLoggedIn(true);
     setUsername(name || localStorage.getItem("username") || "");
-  };
+  }
 
-  const handleRegisterSuccess = () => {
+  function handleRegisterSuccess() {
     setAuthMode("login");
-  };
+  }
 
-  const handleLogout = () => {
+  function handleLogout() {
     localStorage.removeItem("token");
     localStorage.removeItem("username");
     setIsLoggedIn(false);
     setUsername("");
     setAuthMode("login");
-  };
+  }
 
   if (!isLoggedIn) {
     return (
@@ -338,7 +339,10 @@ function App() {
     return (
       <div className="app-shell empty-state">
         <h1>Code Playground</h1>
-        <p>ไม่พบโจทย์ในระดับที่เลือก</p>
+        <p>{errorMessage || "กำลังโหลดโจทย์..."}</p>
+        <button className="ghost-btn" onClick={handleRestart}>
+          ลองโหลดใหม่
+        </button>
       </div>
     );
   }
@@ -361,7 +365,7 @@ function App() {
 
           <div className="stat-card">
             <span className="stat-label">Level</span>
-            <select value={levelFilter} onChange={handleLevelChange}>
+            <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
               <option value="all">All</option>
               <option value="easy">Easy</option>
               <option value="medium">Medium</option>
@@ -377,7 +381,7 @@ function App() {
           <div className="stat-card">
             <span className="stat-label">Solved</span>
             <strong>
-              {solvedCountInRound}/{roundProblems.length}
+              {solvedCountInRound}/{total}
             </strong>
           </div>
 
@@ -394,15 +398,12 @@ function App() {
       <section className="progress-section">
         <div className="progress-text">
           <span>
-            ข้อที่ {currentIndex + 1} / {roundProblems.length}
+            ข้อที่ {currentIndex + 1} / {total}
           </span>
           <span>{Math.round(progressPercent)}%</span>
         </div>
         <div className="progress-bar">
-          <div
-            className="progress-fill"
-            style={{ width: `${progressPercent}%` }}
-          />
+          <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
         </div>
       </section>
 
@@ -420,35 +421,65 @@ function App() {
           </div>
 
           <div className="meta-row">
-            <span>คะแนนข้อนี้: {currentProblem.points}</span>
-            <span>Level: {currentProblem.level}</span>
+            <span>คะแนนข้อนี้: {currentProblem.score || 0}</span>
+            <span>Level: {currentProblem.difficulty}</span>
           </div>
 
           <div className="card-block">
-            <p>{currentProblem.description}</p>
+            <p style={{ whiteSpace: "pre-wrap" }}>{currentProblem.prompt}</p>
           </div>
 
           <div className="section-block">
             <h3>คำใบ้</h3>
             <ul>
-              {currentProblem.hint.map((item, index) => (
-                <li key={index}>{item}</li>
-              ))}
+              {(currentProblem.hints || [])
+                .slice(0, showHintCount)
+                .map((h, i) => (
+                  <li key={i}>{h}</li>
+                ))}
             </ul>
+
+            <div style={{ marginTop: 10 }}>
+              ⏳ เหลือเวลา: {timeLeft}s
+            </div>
+
+            <div className="timer-bar" style={{ marginTop: 8 }}>
+              <div
+                className="timer-fill"
+                style={{
+                  width: `${(timeLeft / (currentProblem.revealDelaySec || 30)) * 100}%`,
+                }}
+              />
+            </div>
+
+            {showRevealButton && !showSolution && (
+              <button
+                className="toolbar-btn secondary"
+                style={{ marginTop: 10 }}
+                onClick={() => {
+                  setShowSolution(true);
+                  setUsedSolution(true);
+                }}
+              >
+                ดูเฉลยตัวอย่าง
+              </button>
+            )}
           </div>
 
           <div className="section-block">
             <h3>ตัวอย่าง</h3>
-            <div className="example-box">
-              <div>
-                <strong>Input</strong>
-                <pre>{currentProblem.exampleInput}</pre>
+            {(currentProblem.samples || []).map((sample, index) => (
+              <div className="example-box" key={index}>
+                <div>
+                  <strong>Input</strong>
+                  <pre>{sample.input}</pre>
+                </div>
+                <div>
+                  <strong>Output</strong>
+                  <pre>{sample.output}</pre>
+                </div>
               </div>
-              <div>
-                <strong>Output</strong>
-                <pre>{currentProblem.exampleOutput}</pre>
-              </div>
-            </div>
+            ))}
           </div>
         </aside>
 
@@ -460,17 +491,34 @@ function App() {
             </div>
 
             <div className="toolbar">
-              <button className="toolbar-btn secondary" onClick={handleRun}>
+              <button
+                className="toolbar-btn secondary"
+                onClick={handleRun}
+                disabled={loadingSubmit}
+              >
                 Run
               </button>
-              <button className="toolbar-btn primary" onClick={handleSubmit}>
+              <button
+                className="toolbar-btn primary"
+                onClick={handleSubmit}
+                disabled={loadingSubmit}
+              >
                 Submit
               </button>
               <button
                 className="toolbar-btn secondary"
                 onClick={handleResetCode}
+                disabled={loadingSubmit}
               >
                 Reset
+              </button>
+
+              <button
+                className="toolbar-btn secondary"
+                onClick={() => setCode(currentProblem?.starter || fallbackStarter)}
+                disabled={loadingSubmit}
+              >
+                โหลด starter code
               </button>
             </div>
           </div>
@@ -483,6 +531,40 @@ function App() {
               spellCheck="false"
             />
           </div>
+
+          {showSolution && (
+  <div style={{ marginTop: 20 }}>
+    <h3>เฉลยตัวอย่าง</h3>
+
+    <p style={{ color: "#94a3b8", marginBottom: 8 }}>
+      นี่เป็นเพียงตัวอย่างหนึ่งวิธี คำตอบของคุณสามารถต่างจากนี้ได้ ถ้าผ่าน test
+    </p>
+
+    <pre
+      style={{
+        background: "#f8fafc",
+        color: "#475569",
+        padding: 16,
+        borderRadius: 10,
+        overflowX: "auto",
+        whiteSpace: "pre-wrap",
+        border: "1px dashed #94a3b8",
+        lineHeight: 1.5,
+        fontSize: 14
+      }}
+    >
+      {currentProblem.exampleSolution}
+    </pre>
+
+    <button
+      className="toolbar-btn secondary"
+      onClick={() => setCode(currentProblem.exampleSolution || "")}
+      style={{ marginTop: 10 }}
+    >
+      ใช้เฉลยนี้ใน editor
+    </button>
+  </div>
+)}
 
           <div className="editor-footer">
             <button className="next-btn" onClick={handleNextProblem}>
@@ -503,19 +585,8 @@ function App() {
               {status === "running" && "กำลังรัน"}
               {status === "success" && "สำเร็จ"}
               {status === "wrong" && "ยังไม่ถูก"}
-              {status === "warning" && "รอผลลัพธ์"}
               {status === "error" && "เกิดข้อผิดพลาด"}
             </div>
-          </div>
-
-          <div className="section-block">
-            <h3>ผลลัพธ์จำลองจากโค้ด</h3>
-            <textarea
-              className="mock-output-input"
-              value={customOutput}
-              onChange={(e) => setCustomOutput(e.target.value)}
-              placeholder="พิมพ์ output ที่โค้ดของคุณควรแสดง เช่น tneduts"
-            />
           </div>
 
           <div className="section-block">
@@ -526,7 +597,7 @@ function App() {
           </div>
 
           <div className="section-block">
-            <h3>Error</h3>
+            <h3>Error / Hint</h3>
             <div className={`error-box ${errorMessage ? "has-error" : ""}`}>
               <pre>{errorMessage || "ไม่มีข้อผิดพลาด"}</pre>
             </div>
