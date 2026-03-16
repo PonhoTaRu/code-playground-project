@@ -585,3 +585,22 @@ textarea {
 .logout-btn:hover {
   background: rgba(127, 29, 29, 0.35);
 }
+
+.clickable-card {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.clickable-card:hover {
+  transform: translateY(-2px);
+}
+
+.clickable-card:focus {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+.clickable-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}

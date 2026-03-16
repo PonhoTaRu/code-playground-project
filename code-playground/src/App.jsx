@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Profile from "./pages/Profile";
 
 const fallbackStarter = "";
 
@@ -27,8 +28,8 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authMode, setAuthMode] = useState("login");
   const [username, setUsername] = useState("");
+  const [currentPage, setCurrentPage] = useState("home"); // home | profile
 
-  // hint / solution system
   const [timeLeft, setTimeLeft] = useState(30);
   const [showHintCount, setShowHintCount] = useState(0);
   const [showRevealButton, setShowRevealButton] = useState(false);
@@ -93,8 +94,8 @@ function App() {
   useEffect(() => {
     if (!currentProblem) return;
 
-    const total = currentProblem.revealDelaySec || 30;
-    const elapsed = total - timeLeft;
+    const totalTime = currentProblem.revealDelaySec || 30;
+    const elapsed = totalTime - timeLeft;
     const hintLevel = Math.floor(elapsed / 10);
 
     setShowHintCount(Math.max(0, hintLevel));
@@ -154,10 +155,13 @@ function App() {
       setStatus("running");
       setErrorMessage("");
 
+      const token = localStorage.getItem("token");
+
       const res = await fetch("http://localhost:8080/api/submit", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
           problemId: currentProblem.id,
@@ -195,15 +199,19 @@ function App() {
       setStatus("running");
       setErrorMessage("");
 
+      const token = localStorage.getItem("token");
+
       const res = await fetch("http://localhost:8080/api/submit", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
           problemId: currentProblem.id,
           sourceCode: code,
-          languageId: 63
+          languageId: 63,
+          usedSolution
         })
       });
 
@@ -231,21 +239,22 @@ Status: ${c.pass ? "Passed" : "Failed"}`
           )
           .join("\n\n");
 
-        setOutput(`✅ Accepted\n\n${rendered}`);
-
+        let earned = 0;
         if (!alreadySolved) {
-          let earned = currentProblem.score || 0;
-          if (usedSolution) earned = Math.floor(earned / 2);
+          earned =
+            typeof data.score === "number"
+              ? data.score
+              : usedSolution
+              ? Math.floor((currentProblem.score || 0) / 2)
+              : currentProblem.score || 0;
 
           setSolvedIds((prev) => [...prev, currentProblem.id]);
           setScore((prev) => prev + earned);
-
-          if (usedSolution) {
-            setOutput(
-              `✅ Accepted\n\nได้คะแนน ${earned} (ลดครึ่งหนึ่งเพราะใช้เฉลย)\n\n${rendered}`
-            );
-          }
         }
+
+        setOutput(
+          `✅ Accepted\n\n${!alreadySolved ? `ได้คะแนน ${earned}\n\n` : ""}${rendered}`
+        );
       } else {
         setStatus(data.status === "Error" ? "error" : "wrong");
 
@@ -287,6 +296,7 @@ Status: ${c.pass ? "Passed" : "Failed"}${c.stderr ? `\nstderr: ${c.stderr}` : ""
   function handleLoginSuccess(name) {
     setIsLoggedIn(true);
     setUsername(name || localStorage.getItem("username") || "");
+    setCurrentPage("home");
   }
 
   function handleRegisterSuccess() {
@@ -299,6 +309,7 @@ Status: ${c.pass ? "Passed" : "Failed"}${c.stderr ? `\nstderr: ${c.stderr}` : ""
     setIsLoggedIn(false);
     setUsername("");
     setAuthMode("login");
+    setCurrentPage("home");
   }
 
   if (!isLoggedIn) {
@@ -335,6 +346,16 @@ Status: ${c.pass ? "Passed" : "Failed"}${c.stderr ? `\nstderr: ${c.stderr}` : ""
     );
   }
 
+  if (currentPage === "profile") {
+    return (
+      <Profile
+        onBack={() => setCurrentPage("home")}
+        onUsernameChange={(newName) => setUsername(newName)}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
   if (!currentProblem) {
     return (
       <div className="app-shell empty-state">
@@ -358,10 +379,20 @@ Status: ${c.pass ? "Passed" : "Failed"}${c.stderr ? `\nstderr: ${c.stderr}` : ""
         </div>
 
         <div className="topbar-right">
-          <div className="stat-card">
-            <span className="stat-label">User</span>
-            <strong>{username || "ผู้ใช้"}</strong>
-          </div>
+          <div
+  className="stat-card clickable-card"
+  onClick={() => setCurrentPage("profile")}
+  role="button"
+  tabIndex={0}
+  onKeyDown={(e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      setCurrentPage("profile");
+    }
+  }}
+>
+  <span className="stat-label">User</span>
+  <strong>{username || "ผู้ใช้"}</strong>
+</div>
 
           <div className="stat-card">
             <span className="stat-label">Level</span>
@@ -439,9 +470,7 @@ Status: ${c.pass ? "Passed" : "Failed"}${c.stderr ? `\nstderr: ${c.stderr}` : ""
                 ))}
             </ul>
 
-            <div style={{ marginTop: 10 }}>
-              ⏳ เหลือเวลา: {timeLeft}s
-            </div>
+            <div style={{ marginTop: 10 }}>⏳ เหลือเวลา: {timeLeft}s</div>
 
             <div className="timer-bar" style={{ marginTop: 8 }}>
               <div
@@ -533,38 +562,37 @@ Status: ${c.pass ? "Passed" : "Failed"}${c.stderr ? `\nstderr: ${c.stderr}` : ""
           </div>
 
           {showSolution && (
-  <div style={{ marginTop: 20 }}>
-    <h3>เฉลยตัวอย่าง</h3>
+            <div style={{ marginTop: 20 }}>
+              <h3>เฉลยตัวอย่าง</h3>
+              <p style={{ color: "#94a3b8", marginBottom: 8 }}>
+                นี่เป็นเพียงตัวอย่างหนึ่งวิธี คำตอบของคุณสามารถต่างจากนี้ได้ ถ้าผ่าน test
+              </p>
 
-    <p style={{ color: "#94a3b8", marginBottom: 8 }}>
-      นี่เป็นเพียงตัวอย่างหนึ่งวิธี คำตอบของคุณสามารถต่างจากนี้ได้ ถ้าผ่าน test
-    </p>
+              <pre
+                style={{
+                  background: "#f8fafc",
+                  color: "#475569",
+                  padding: 16,
+                  borderRadius: 10,
+                  overflowX: "auto",
+                  whiteSpace: "pre-wrap",
+                  border: "1px dashed #94a3b8",
+                  lineHeight: 1.5,
+                  fontSize: 14
+                }}
+              >
+                {currentProblem.exampleSolution}
+              </pre>
 
-    <pre
-      style={{
-        background: "#f8fafc",
-        color: "#475569",
-        padding: 16,
-        borderRadius: 10,
-        overflowX: "auto",
-        whiteSpace: "pre-wrap",
-        border: "1px dashed #94a3b8",
-        lineHeight: 1.5,
-        fontSize: 14
-      }}
-    >
-      {currentProblem.exampleSolution}
-    </pre>
-
-    <button
-      className="toolbar-btn secondary"
-      onClick={() => setCode(currentProblem.exampleSolution || "")}
-      style={{ marginTop: 10 }}
-    >
-      ใช้เฉลยนี้ใน editor
-    </button>
-  </div>
-)}
+              <button
+                className="toolbar-btn secondary"
+                onClick={() => setCode(currentProblem.exampleSolution || "")}
+                style={{ marginTop: 10 }}
+              >
+                ใช้เฉลยนี้ใน editor
+              </button>
+            </div>
+          )}
 
           <div className="editor-footer">
             <button className="next-btn" onClick={handleNextProblem}>
