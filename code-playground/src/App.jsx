@@ -2,9 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Profile from "./pages/Profile";
 
-const fallbackStarter = "";
+const fallbackStarter = `const fs = require("fs");
+const input = fs.readFileSync(0, "utf8").trim();
+
+// เขียนโค้ดที่นี่
+`;
 
 function getDifficultyLabel(diff) {
   if (diff === "easy") return "ง่าย";
@@ -17,19 +20,20 @@ function App() {
   const [difficulty, setDifficulty] = useState("all");
   const [problems, setProblems] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [code, setCode] = useState(fallbackStarter);
+
+  const [code, setCode] = useState("");
+  const [customInput, setCustomInput] = useState("");
+
   const [status, setStatus] = useState("idle");
   const [output, setOutput] = useState("ยังไม่มีผลลัพธ์");
   const [errorMessage, setErrorMessage] = useState("");
   const [score, setScore] = useState(0);
   const [solvedIds, setSolvedIds] = useState([]);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
-  const [customInput, setCustomInput] = useState("");
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authMode, setAuthMode] = useState("login");
   const [username, setUsername] = useState("");
-  const [currentPage, setCurrentPage] = useState("home"); // home | profile
 
   const [timeLeft, setTimeLeft] = useState(30);
   const [showHintCount, setShowHintCount] = useState(0);
@@ -44,11 +48,14 @@ function App() {
 
   const total = problems.length;
   const progressPercent = total ? ((currentIndex + 1) / total) * 100 : 0;
-  const solvedCountInRound = problems.filter((p) => solvedIds.includes(p.id)).length;
+  const solvedCountInRound = problems.filter((p) =>
+    solvedIds.includes(p.id)
+  ).length;
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     const savedUsername = localStorage.getItem("username");
+
     if (token) {
       setIsLoggedIn(true);
       setUsername(savedUsername || "");
@@ -64,6 +71,7 @@ function App() {
     if (!currentProblem) return;
 
     setCode("");
+    setCustomInput("");
     setStatus("idle");
     setOutput("ยังไม่มีผลลัพธ์");
     setErrorMessage("");
@@ -97,9 +105,15 @@ function App() {
 
     const totalTime = currentProblem.revealDelaySec || 30;
     const elapsed = totalTime - timeLeft;
-    const hintLevel = Math.floor(elapsed / 10);
+    const hintLevel = Math.floor(elapsed / 10) + 1;
 
-    setShowHintCount(Math.max(0, hintLevel));
+    setShowHintCount(
+      Math.min(hintLevel, currentProblem.hints?.length || 0)
+    );
+
+    if (timeLeft <= 0) {
+      setShowRevealButton(true);
+    }
   }, [timeLeft, currentProblem]);
 
   async function loadProblems(level = "all") {
@@ -111,7 +125,14 @@ function App() {
       setCurrentIndex(0);
       setSolvedIds([]);
 
-      const res = await fetch(`http://localhost:8080/api/problems?difficulty=${level}`);
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `http://localhost:8080/api/problems?difficulty=${level}`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        }
+      );
+
       if (!res.ok) {
         const text = await res.text();
         throw new Error(`โหลดโจทย์ไม่สำเร็จ (${res.status}): ${text}`);
@@ -141,8 +162,7 @@ function App() {
   }
 
   function handleResetCode() {
-    if (!currentProblem) return;
-    setCode(currentProblem.starter || fallbackStarter);
+    setCode("");
     setStatus("idle");
     setOutput("รีเซ็ตโค้ดแล้ว");
     setErrorMessage("");
@@ -157,6 +177,12 @@ function App() {
       setErrorMessage("");
 
       const token = localStorage.getItem("token");
+      const effectiveInput =
+        customInput || currentProblem.samples?.[0]?.input || "";
+
+      if (!customInput && effectiveInput) {
+        setCustomInput(effectiveInput);
+      }
 
       const res = await fetch("http://localhost:8080/api/submit", {
         method: "POST",
@@ -168,7 +194,7 @@ function App() {
           problemId: currentProblem.id,
           sourceCode: code,
           languageId: 63,
-          customInput: customInput || currentProblem.samples?.[0]?.input || ""
+          customInput: effectiveInput
         })
       });
 
@@ -201,7 +227,6 @@ function App() {
       setErrorMessage("");
 
       const token = localStorage.getItem("token");
-
       const res = await fetch("http://localhost:8080/api/submit", {
         method: "POST",
         headers: {
@@ -211,8 +236,7 @@ function App() {
         body: JSON.stringify({
           problemId: currentProblem.id,
           sourceCode: code,
-          languageId: 63,
-          usedSolution
+          languageId: 63
         })
       });
 
@@ -240,22 +264,21 @@ Status: ${c.pass ? "Passed" : "Failed"}`
           )
           .join("\n\n");
 
-        let earned = 0;
+        setOutput(`✅ Accepted\n\n${rendered}`);
+
         if (!alreadySolved) {
-          earned =
-            typeof data.score === "number"
-              ? data.score
-              : usedSolution
-              ? Math.floor((currentProblem.score || 0) / 2)
-              : currentProblem.score || 0;
+          let earned = currentProblem.score || 0;
+          if (usedSolution) earned = Math.floor(earned / 2);
 
           setSolvedIds((prev) => [...prev, currentProblem.id]);
           setScore((prev) => prev + earned);
-        }
 
-        setOutput(
-          `✅ Accepted\n\n${!alreadySolved ? `ได้คะแนน ${earned}\n\n` : ""}${rendered}`
-        );
+          if (usedSolution) {
+            setOutput(
+              `✅ Accepted\n\nได้คะแนน ${earned} (ลดครึ่งหนึ่งเพราะใช้เฉลย)\n\n${rendered}`
+            );
+          }
+        }
       } else {
         setStatus(data.status === "Error" ? "error" : "wrong");
 
@@ -285,19 +308,20 @@ Status: ${c.pass ? "Passed" : "Failed"}${c.stderr ? `\nstderr: ${c.stderr}` : ""
 
   function handleNextProblem() {
     const nextIndex = currentIndex + 1;
+
     if (nextIndex >= total) {
       setStatus("idle");
       setOutput("จบรอบแล้ว กด 'เริ่มรอบใหม่' เพื่อสุ่มโจทย์ชุดใหม่");
       setErrorMessage("");
       return;
     }
+
     setCurrentIndex(nextIndex);
   }
 
   function handleLoginSuccess(name) {
     setIsLoggedIn(true);
     setUsername(name || localStorage.getItem("username") || "");
-    setCurrentPage("home");
   }
 
   function handleRegisterSuccess() {
@@ -310,7 +334,6 @@ Status: ${c.pass ? "Passed" : "Failed"}${c.stderr ? `\nstderr: ${c.stderr}` : ""
     setIsLoggedIn(false);
     setUsername("");
     setAuthMode("login");
-    setCurrentPage("home");
   }
 
   if (!isLoggedIn) {
@@ -347,16 +370,6 @@ Status: ${c.pass ? "Passed" : "Failed"}${c.stderr ? `\nstderr: ${c.stderr}` : ""
     );
   }
 
-  if (currentPage === "profile") {
-    return (
-      <Profile
-        onBack={() => setCurrentPage("home")}
-        onUsernameChange={(newName) => setUsername(newName)}
-        onLogout={handleLogout}
-      />
-    );
-  }
-
   if (!currentProblem) {
     return (
       <div className="app-shell empty-state">
@@ -380,24 +393,17 @@ Status: ${c.pass ? "Passed" : "Failed"}${c.stderr ? `\nstderr: ${c.stderr}` : ""
         </div>
 
         <div className="topbar-right">
-          <div
-  className="stat-card clickable-card"
-  onClick={() => setCurrentPage("profile")}
-  role="button"
-  tabIndex={0}
-  onKeyDown={(e) => {
-    if (e.key === "Enter" || e.key === " ") {
-      setCurrentPage("profile");
-    }
-  }}
->
-  <span className="stat-label">User</span>
-  <strong>{username || "ผู้ใช้"}</strong>
-</div>
+          <div className="stat-card">
+            <span className="stat-label">User</span>
+            <strong>{username || "ผู้ใช้"}</strong>
+          </div>
 
           <div className="stat-card">
             <span className="stat-label">Level</span>
-            <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
+            <select
+              value={difficulty}
+              onChange={(e) => setDifficulty(e.target.value)}
+            >
               <option value="all">All</option>
               <option value="easy">Easy</option>
               <option value="medium">Medium</option>
@@ -435,7 +441,10 @@ Status: ${c.pass ? "Passed" : "Failed"}${c.stderr ? `\nstderr: ${c.stderr}` : ""
           <span>{Math.round(progressPercent)}%</span>
         </div>
         <div className="progress-bar">
-          <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
+          <div
+            className="progress-fill"
+            style={{ width: `${progressPercent}%` }}
+          />
         </div>
       </section>
 
@@ -466,21 +475,12 @@ Status: ${c.pass ? "Passed" : "Failed"}${c.stderr ? `\nstderr: ${c.stderr}` : ""
             <ul>
               {(currentProblem.hints || [])
                 .slice(0, showHintCount)
-                .map((h, i) => (
-                  <li key={i}>{h}</li>
+                .map((item, index) => (
+                  <li key={index}>{item}</li>
                 ))}
             </ul>
 
             <div style={{ marginTop: 10 }}>⏳ เหลือเวลา: {timeLeft}s</div>
-
-            <div className="timer-bar" style={{ marginTop: 8 }}>
-              <div
-                className="timer-fill"
-                style={{
-                  width: `${(timeLeft / (currentProblem.revealDelaySec || 30)) * 100}%`,
-                }}
-              />
-            </div>
 
             {showRevealButton && !showSolution && (
               <button
@@ -520,26 +520,6 @@ Status: ${c.pass ? "Passed" : "Failed"}${c.stderr ? `\nstderr: ${c.stderr}` : ""
               <h2>JavaScript</h2>
             </div>
 
-            <div style={{ marginTop: 16 }}>
-  <h3>Custom Input</h3>
-
-  <textarea
-    value={customInput}
-    onChange={(e) => setCustomInput(e.target.value)}
-    placeholder="ใส่ input เพื่อทดสอบ เช่น: มินท์"
-    style={{
-      width: "100%",
-      minHeight: 90,
-      borderRadius: 8,
-      padding: 12,
-      background: "#0f172a",
-      color: "#fff",
-      border: "1px solid #334155",
-      boxSizing: "border-box"
-    }}
-  />
-</div>
-
             <div className="toolbar">
               <button
                 className="toolbar-btn secondary"
@@ -548,12 +528,7 @@ Status: ${c.pass ? "Passed" : "Failed"}${c.stderr ? `\nstderr: ${c.stderr}` : ""
               >
                 Run
               </button>
-              <button
-  className="toolbar-btn secondary"
-  onClick={() => setCustomInput(currentProblem?.samples?.[0]?.input || "")}
->
-  ใช้ตัวอย่าง
-</button>
+
               <button
                 className="toolbar-btn primary"
                 onClick={handleSubmit}
@@ -561,6 +536,7 @@ Status: ${c.pass ? "Passed" : "Failed"}${c.stderr ? `\nstderr: ${c.stderr}` : ""
               >
                 Submit
               </button>
+
               <button
                 className="toolbar-btn secondary"
                 onClick={handleResetCode}
@@ -571,7 +547,9 @@ Status: ${c.pass ? "Passed" : "Failed"}${c.stderr ? `\nstderr: ${c.stderr}` : ""
 
               <button
                 className="toolbar-btn secondary"
-                onClick={() => setCode(currentProblem?.starter || fallbackStarter)}
+                onClick={() =>
+                  setCode(currentProblem?.starter || fallbackStarter)
+                }
                 disabled={loadingSubmit}
               >
                 โหลด starter code
@@ -585,25 +563,84 @@ Status: ${c.pass ? "Passed" : "Failed"}${c.stderr ? `\nstderr: ${c.stderr}` : ""
               value={code}
               onChange={(e) => setCode(e.target.value)}
               spellCheck="false"
+              style={{
+                minHeight: "340px",
+                height: "40vh",
+                resize: "vertical"
+              }}
             />
+          </div>
+
+          <hr
+            style={{
+              margin: "20px 0",
+              border: "none",
+              borderTop: "1px solid #1e293b"
+            }}
+          />
+
+          <div style={{ marginTop: 4 }}>
+            <h3 style={{ color: "#94a3b8", marginBottom: 8 }}>Custom Input</h3>
+
+            <textarea
+              value={customInput}
+              onChange={(e) => setCustomInput(e.target.value)}
+              placeholder="ใส่ input เพื่อทดสอบ เช่น: มินท์ หรือ 3 5"
+              style={{
+                width: "100%",
+                minHeight: 90,
+                borderRadius: 8,
+                padding: 12,
+                background: "#0f172a",
+                color: "#fff",
+                border: "1px solid #334155",
+                boxSizing: "border-box",
+                fontFamily: "monospace",
+                marginBottom: 12
+              }}
+            />
+
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+                alignItems: "center"
+              }}
+            >
+              <button
+                className="toolbar-btn secondary"
+                onClick={() =>
+                  setCustomInput(currentProblem?.samples?.[0]?.input || "")
+                }
+                disabled={loadingSubmit}
+              >
+                ใช้ตัวอย่าง
+              </button>
+
+              <span style={{ color: "#94a3b8", fontSize: 13 }}>
+                กดปุ่มนี้เพื่อใส่ input ตัวอย่างของโจทย์อัตโนมัติ
+              </span>
+            </div>
           </div>
 
           {showSolution && (
             <div style={{ marginTop: 20 }}>
               <h3>เฉลยตัวอย่าง</h3>
-              <p style={{ color: "#94a3b8", marginBottom: 8 }}>
-                นี่เป็นเพียงตัวอย่างหนึ่งวิธี คำตอบของคุณสามารถต่างจากนี้ได้ ถ้าผ่าน test
+              <p style={{ color: "#777" }}>
+                นี่เป็นเพียงตัวอย่างหนึ่งวิธี คำตอบของคุณสามารถต่างจากนี้ได้ถ้าผ่าน
+                test
               </p>
 
               <pre
                 style={{
-                  background: "#f8fafc",
-                  color: "#475569",
+                  background: "#1e293b",
+                  color: "#cbd5e1",
                   padding: 16,
                   borderRadius: 10,
                   overflowX: "auto",
                   whiteSpace: "pre-wrap",
-                  border: "1px dashed #94a3b8",
+                  border: "1px dashed #475569",
                   lineHeight: 1.5,
                   fontSize: 14
                 }}
