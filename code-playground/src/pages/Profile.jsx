@@ -42,6 +42,11 @@ export default function Profile({ onBack, onUsernameChange, onLogout }) {
     try {
       setMessage("");
 
+      if (!newUsername.trim()) {
+        setMessage("กรุณากรอกชื่อผู้ใช้ใหม่");
+        return;
+      }
+
       const res = await fetch("http://localhost:8080/api/me/username", {
         method: "PUT",
         headers: {
@@ -55,23 +60,31 @@ export default function Profile({ onBack, onUsernameChange, onLogout }) {
 
       if (!res.ok) throw new Error(data.message || "เปลี่ยนชื่อไม่สำเร็จ");
 
-      setUsername(data.username || newUsername);
+      const updatedUsername = data.username || newUsername.trim();
+
+      setUsername(updatedUsername);
       setNewUsername("");
       setMessage(data.message || "เปลี่ยนชื่อสำเร็จ");
 
       if (data.token) localStorage.setItem("token", data.token);
-      if (data.username) {
-        localStorage.setItem("username", data.username);
-        if (onUsernameChange) onUsernameChange(data.username);
+      localStorage.setItem("username", updatedUsername);
+
+      if (onUsernameChange) {
+        onUsernameChange(updatedUsername);
       }
     } catch (err) {
-      setMessage(err.message);
+      setMessage(err.message || "เปลี่ยนชื่อไม่สำเร็จ");
     }
   }
 
   async function changePassword() {
     try {
       setMessage("");
+
+      if (!currentPassword || !newPassword) {
+        setMessage("กรุณากรอกรหัสผ่านเดิมและรหัสผ่านใหม่");
+        return;
+      }
 
       const res = await fetch("http://localhost:8080/api/me/password", {
         method: "PUT",
@@ -90,7 +103,7 @@ export default function Profile({ onBack, onUsernameChange, onLogout }) {
       setNewPassword("");
       setMessage(data.message || "เปลี่ยนรหัสผ่านสำเร็จ");
     } catch (err) {
-      setMessage(err.message);
+      setMessage(err.message || "เปลี่ยนรหัสผ่านไม่สำเร็จ");
     }
   }
 
@@ -103,16 +116,22 @@ export default function Profile({ onBack, onUsernameChange, onLogout }) {
         </div>
 
         <div className="topbar-right">
-          <button className="ghost-btn" onClick={onBack}>
+          <button type="button" className="ghost-btn" onClick={onBack}>
             กลับหน้าหลัก
           </button>
-          <button className="ghost-btn logout-btn" onClick={onLogout}>
+          <button type="button" className="ghost-btn logout-btn" onClick={onLogout}>
             Logout
           </button>
         </div>
       </header>
 
-      <main className="workspace" style={{ gridTemplateColumns: "1fr 1fr" }}>
+      <main
+        className="workspace"
+        style={{
+          gridTemplateColumns: "1fr 1fr",
+          gap: 20
+        }}
+      >
         <section className="panel">
           <div className="panel-header">
             <div>
@@ -127,9 +146,18 @@ export default function Profile({ onBack, onUsernameChange, onLogout }) {
               value={newUsername}
               onChange={(e) => setNewUsername(e.target.value)}
               placeholder="ชื่อผู้ใช้ใหม่"
-              style={{ width: "100%", padding: 10, marginBottom: 10 }}
+              style={{
+                width: "100%",
+                padding: 10,
+                marginBottom: 10,
+                borderRadius: 8,
+                border: "1px solid #334155",
+                background: "#0f172a",
+                color: "#fff",
+                boxSizing: "border-box"
+              }}
             />
-            <button className="toolbar-btn primary" onClick={changeUsername}>
+            <button type="button" className="toolbar-btn primary" onClick={changeUsername}>
               บันทึกชื่อใหม่
             </button>
           </div>
@@ -141,16 +169,34 @@ export default function Profile({ onBack, onUsernameChange, onLogout }) {
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               placeholder="รหัสผ่านเดิม"
-              style={{ width: "100%", padding: 10, marginBottom: 10 }}
+              style={{
+                width: "100%",
+                padding: 10,
+                marginBottom: 10,
+                borderRadius: 8,
+                border: "1px solid #334155",
+                background: "#0f172a",
+                color: "#fff",
+                boxSizing: "border-box"
+              }}
             />
             <input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="รหัสผ่านใหม่"
-              style={{ width: "100%", padding: 10, marginBottom: 10 }}
+              style={{
+                width: "100%",
+                padding: 10,
+                marginBottom: 10,
+                borderRadius: 8,
+                border: "1px solid #334155",
+                background: "#0f172a",
+                color: "#fff",
+                boxSizing: "border-box"
+              }}
             />
-            <button className="toolbar-btn primary" onClick={changePassword}>
+            <button type="button" className="toolbar-btn primary" onClick={changePassword}>
               เปลี่ยนรหัสผ่าน
             </button>
           </div>

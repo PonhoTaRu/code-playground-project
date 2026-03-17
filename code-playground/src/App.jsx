@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Profile from "./pages/Profile";
 
 const fallbackStarter = `const fs = require("fs");
 const input = fs.readFileSync(0, "utf8").trim();
@@ -34,6 +35,7 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authMode, setAuthMode] = useState("login");
   const [username, setUsername] = useState("");
+  const [showProfile, setShowProfile] = useState(false);
 
   const [timeLeft, setTimeLeft] = useState(30);
   const [showHintCount, setShowHintCount] = useState(0);
@@ -334,6 +336,11 @@ Status: ${c.pass ? "Passed" : "Failed"}${c.stderr ? `\nstderr: ${c.stderr}` : ""
     setIsLoggedIn(false);
     setUsername("");
     setAuthMode("login");
+    setShowProfile(false);
+  }
+
+  function handleBackFromProfile() {
+    setShowProfile(false);
   }
 
   if (!isLoggedIn) {
@@ -370,6 +377,16 @@ Status: ${c.pass ? "Passed" : "Failed"}${c.stderr ? `\nstderr: ${c.stderr}` : ""
     );
   }
 
+  if (showProfile) {
+    return (
+      <Profile
+        onBack={handleBackFromProfile}
+        onUsernameChange={setUsername}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
   if (!currentProblem) {
     return (
       <div className="app-shell empty-state">
@@ -393,10 +410,14 @@ Status: ${c.pass ? "Passed" : "Failed"}${c.stderr ? `\nstderr: ${c.stderr}` : ""
         </div>
 
         <div className="topbar-right">
-          <div className="stat-card">
+          <button
+            type="button"
+            className="stat-card profile-card-btn"
+            onClick={() => setShowProfile(true)}
+          >
             <span className="stat-label">User</span>
             <strong>{username || "ผู้ใช้"}</strong>
-          </div>
+          </button>
 
           <div className="stat-card">
             <span className="stat-label">Level</span>
@@ -547,9 +568,7 @@ Status: ${c.pass ? "Passed" : "Failed"}${c.stderr ? `\nstderr: ${c.stderr}` : ""
 
               <button
                 className="toolbar-btn secondary"
-                onClick={() =>
-                  setCode(currentProblem?.starter || fallbackStarter)
-                }
+                onClick={() => setCode(currentProblem?.starter || fallbackStarter)}
                 disabled={loadingSubmit}
               >
                 โหลด starter code
