@@ -10,33 +10,47 @@ export default function Profile({ onBack, onUsernameChange, onLogout }) {
 
   const token = localStorage.getItem("token");
 
+  async function fetchJson(url, options = {}) {
+    const res = await fetch(url, options);
+    const data = await res.json().catch(() => ({}));
+
+    if (res.status === 401) {
+  setMessage("token ไม่ถูกต้องหรือหมดอายุ กรุณาเข้าสู่ระบบใหม่");
+  throw new Error("token ไม่ถูกต้องหรือหมดอายุ");
+}
+
+    if (!res.ok) {
+      throw new Error(data.message || "เกิดข้อผิดพลาด");
+    }
+
+    return data;
+  }
+
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setMessage("ไม่พบ token กรุณาเข้าสู่ระบบใหม่");
+      return;
+    }
 
-    fetch("http://localhost:8080/api/me", {
-      headers: { Authorization: "Bearer " + token }
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setUsername(data.username || "");
+    Promise.all([
+      fetchJson("http://localhost:8080/api/me", {
+        headers: { Authorization: "Bearer " + token }
+      }),
+      fetchJson("http://localhost:8080/api/me/history", {
+        headers: { Authorization: "Bearer " + token }
+      })
+    ])
+      .then(([meData, historyData]) => {
+        setUsername(meData.username || "");
+        setHistory(Array.isArray(historyData) ? historyData : []);
       })
       .catch((err) => {
         console.error(err);
-        setMessage("โหลดข้อมูลผู้ใช้ไม่สำเร็จ");
+        if (!String(err.message || "").includes("token")) {
+          setMessage(err.message || "โหลดข้อมูลไม่สำเร็จ");
+        }
       });
-
-    fetch("http://localhost:8080/api/me/history", {
-      headers: { Authorization: "Bearer " + token }
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setHistory(Array.isArray(data) ? data : []);
-      })
-      .catch((err) => {
-        console.error(err);
-        setMessage("โหลดประวัติไม่สำเร็จ");
-      });
-  }, [token]);
+  }, [token, onLogout]);
 
   async function changeUsername() {
     try {
@@ -47,18 +61,14 @@ export default function Profile({ onBack, onUsernameChange, onLogout }) {
         return;
       }
 
-      const res = await fetch("http://localhost:8080/api/me/username", {
+      const data = await fetchJson("http://localhost:8080/api/me/username", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: "Bearer " + token
         },
-        body: JSON.stringify({ newUsername })
+        body: JSON.stringify({ newUsername: newUsername.trim() })
       });
-
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.message || "เปลี่ยนชื่อไม่สำเร็จ");
 
       const updatedUsername = data.username || newUsername.trim();
 
@@ -66,12 +76,12 @@ export default function Profile({ onBack, onUsernameChange, onLogout }) {
       setNewUsername("");
       setMessage(data.message || "เปลี่ยนชื่อสำเร็จ");
 
-      if (data.token) localStorage.setItem("token", data.token);
-      localStorage.setItem("username", updatedUsername);
-
-      if (onUsernameChange) {
-        onUsernameChange(updatedUsername);
+      if (data.token) {
+        localStorage.setItem("token", data.token);
       }
+
+      localStorage.setItem("username", updatedUsername);
+      if (onUsernameChange) onUsernameChange(updatedUsername);
     } catch (err) {
       setMessage(err.message || "เปลี่ยนชื่อไม่สำเร็จ");
     }
@@ -86,7 +96,7 @@ export default function Profile({ onBack, onUsernameChange, onLogout }) {
         return;
       }
 
-      const res = await fetch("http://localhost:8080/api/me/password", {
+      const data = await fetchJson("http://localhost:8080/api/me/password", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -94,10 +104,6 @@ export default function Profile({ onBack, onUsernameChange, onLogout }) {
         },
         body: JSON.stringify({ currentPassword, newPassword })
       });
-
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.message || "เปลี่ยนรหัสผ่านไม่สำเร็จ");
 
       setCurrentPassword("");
       setNewPassword("");
@@ -116,22 +122,16 @@ export default function Profile({ onBack, onUsernameChange, onLogout }) {
         </div>
 
         <div className="topbar-right">
-          <button type="button" className="ghost-btn" onClick={onBack}>
+          <button className="ghost-btn" onClick={onBack}>
             กลับหน้าหลัก
           </button>
-          <button type="button" className="ghost-btn logout-btn" onClick={onLogout}>
+          <button className="ghost-btn logout-btn" onClick={onLogout}>
             Logout
           </button>
         </div>
       </header>
 
-      <main
-        className="workspace"
-        style={{
-          gridTemplateColumns: "1fr 1fr",
-          gap: 20
-        }}
-      >
+      <main className="workspace" style={{ gridTemplateColumns: "1fr 1fr" }}>
         <section className="panel">
           <div className="panel-header">
             <div>
@@ -157,7 +157,7 @@ export default function Profile({ onBack, onUsernameChange, onLogout }) {
                 boxSizing: "border-box"
               }}
             />
-            <button type="button" className="toolbar-btn primary" onClick={changeUsername}>
+            <button className="toolbar-btn primary" onClick={changeUsername}>
               บันทึกชื่อใหม่
             </button>
           </div>
@@ -196,7 +196,7 @@ export default function Profile({ onBack, onUsernameChange, onLogout }) {
                 boxSizing: "border-box"
               }}
             />
-            <button type="button" className="toolbar-btn primary" onClick={changePassword}>
+            <button className="toolbar-btn primary" onClick={changePassword}>
               เปลี่ยนรหัสผ่าน
             </button>
           </div>

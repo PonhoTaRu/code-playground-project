@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import db from "./db.js";
 
-const SECRET = "secret123";
+const SECRET = process.env.JWT_SECRET || "my_secret_key";
 
 export function register(req,res){
 
