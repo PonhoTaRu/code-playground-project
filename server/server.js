@@ -338,29 +338,35 @@ app.post('/api/submit', async (req, res) => {
 
     // optional history save when user sends Bearer token
     const authUser = getOptionalUser(req);
-    const score = calculateScore(problem, status === 'Accepted', usedSolution);
+const score = calculateScore(problem, status === 'Accepted', usedSolution);
 
-    if (authUser?.id && !customInput) {
-      db.run(
-        `
-          INSERT INTO play_history (user_id, problem_title, difficulty, status, score, source_code)
-          VALUES (?, ?, ?, ?, ?, ?)
-        `,
-        [
-          authUser.id,
-          problem.title || `Problem ${problem.id}`,
-          problem.difficulty || 'easy',
-          status,
-          score,
-          sourceCode || ''
-        ],
-        (dbErr) => {
-          if (dbErr) {
-            console.error('Save history error:', dbErr);
-          }
+if (!customInput) {
+  if (!authUser?.id) {
+    console.warn("History not saved: no valid auth user on submit");
+  } else {
+    db.run(
+      `
+        INSERT INTO play_history (user_id, problem_title, difficulty, status, score, source_code)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `,
+      [
+        authUser.id,
+        problem.title || `Problem ${problem.id}`,
+        problem.difficulty || 'easy',
+        status,
+        score,
+        sourceCode || ''
+      ],
+      function (dbErr) {
+        if (dbErr) {
+          console.error("Save history error:", dbErr);
+        } else {
+          console.log("History saved, row id =", this.lastID);
         }
-      );
-    }
+      }
+    );
+  }
+}
 
     res.json({ status, cases: results, hints, score });
   } catch (err) {
