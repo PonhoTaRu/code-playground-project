@@ -27,7 +27,9 @@ code-playground-project/
 
 📦 Installation
 1. Install Backend dependencies
-<pre> ```bash cd server npm install node server.js ``` </pre>
+$ cd server
+$ npm install
+$ node server.js
 2. Install Frontend dependencies
 cd ../code-playground
 npm install
