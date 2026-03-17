@@ -11,7 +11,7 @@ const problemTemplates = [
       "ระวังเว้นวรรคระหว่างคำว่า สวัสดี กับชื่อ"
     ],
     starter: `const fs = require("fs");
-const name = fs.readFileSync(0, "utf8").trim();
+const input = fs.readFileSync("/dev/stdin").toString().trim();
 
 // สร้างข้อความทักทาย แล้วแสดงผล
 // ตัวอย่าง: สวัสดี มินท์
@@ -40,7 +40,7 @@ console.log("สวัสดี " + input);
       "นำตัวเลขทั้งสองมาบวกกันแล้วแสดงผล"
     ],
     starter: `const fs = require("fs");
-const input = fs.readFileSync(0, "utf8").trim();
+const input = fs.readFileSync("/dev/stdin").toString().trim();
 
 const [a, b] = input.split(" ").map(Number);
 
@@ -71,7 +71,7 @@ console.log(a + b);
       "นำค่าทั้งสองมาคูณกันแล้วแสดงผล"
     ],
     starter: `const fs = require("fs");
-const input = fs.readFileSync(0, "utf8").trim();
+const input = fs.readFileSync("/dev/stdin").toString().trim();
 
 const [a, b] = input.split(" ").map(Number);
 
@@ -102,7 +102,7 @@ console.log(a * b);
       "นำผลรวมไปหารด้วย 3"
     ],
     starter: `const fs = require("fs");
-const input = fs.readFileSync(0, "utf8").trim();
+const input = fs.readFileSync("/dev/stdin").toString().trim();
 
 const [a, b, c] = input.split(" ").map(Number);
 
@@ -134,7 +134,7 @@ console.log((a + b + c) / 3);
       "หรือใช้ Math.max ก็ได้"
     ],
     starter: `const fs = require("fs");
-const input = fs.readFileSync(0, "utf8").trim();
+const input = fs.readFileSync("/dev/stdin").toString().trim();
 
 const [a, b] = input.split(" ").map(Number);
 
@@ -166,7 +166,7 @@ console.log(Math.max(a, b));
       "ถ้าไม่ใช่ 0 แปลว่าเป็นเลขคี่"
     ],
     starter: `const fs = require("fs");
-const input = fs.readFileSync(0, "utf8").trim();
+const input = fs.readFileSync("/dev/stdin").toString().trim();
 
 const n = Number(input);
 
@@ -203,7 +203,7 @@ if (n % 2 === 0) {
       "แสดงค่าที่คำนวณได้ออกมา"
     ],
     starter: `const fs = require("fs");
-const input = fs.readFileSync(0, "utf8").trim();
+const input = fs.readFileSync("/dev/stdin").toString().trim();
 
 const c = Number(input);
 
@@ -216,7 +216,7 @@ const c = Number(input);
     score: 20,
     revealDelaySec: 100,
     exampleSolution: `const fs = require("fs");
-const input = fs.readFileSync(0, "utf8").trim();
+const input = fs.readFileSync("/dev/stdin").toString().trim();
 
 const c = Number(input);
 console.log((c * 9) / 5 + 32);
@@ -235,7 +235,7 @@ console.log((c * 9) / 5 + 32);
       "อย่าลืมแปลงค่าที่อ่านได้เป็นตัวเลข"
     ],
     starter: `const fs = require("fs");
-const input = fs.readFileSync(0, "utf8").trim();
+const input = fs.readFileSync("/dev/stdin").toString().trim();
 
 const [width, height] = input.split(" ").map(Number);
 
@@ -248,7 +248,7 @@ const [width, height] = input.split(" ").map(Number);
     score: 10,
     revealDelaySec: 30,
     exampleSolution: `const fs = require("fs");
-const input = fs.readFileSync(0, "utf8").trim();
+const input = fs.readFileSync("/dev/stdin").toString().trim();
 
 const [width, height] = input.split(" ").map(Number);
 console.log(width * height);
@@ -267,7 +267,7 @@ console.log(width * height);
       "แสดงค่าความยาวของข้อความออกมา"
     ],
     starter: `const fs = require("fs");
-const text = fs.readFileSync(0, "utf8").trim();
+const text = fs.readFileSync("/dev/stdin").toString().trim();
 
 // หาจำนวนตัวอักษรของ text
 // แล้วแสดงผล
@@ -278,7 +278,7 @@ const text = fs.readFileSync(0, "utf8").trim();
     score: 20,
     revealDelaySec: 30,
     exampleSolution: `const fs = require("fs");
-const input = fs.readFileSync(0, "utf8").trim();
+const input = fs.readFileSync("/dev/stdin").toString().trim();
 
 console.log(input.length);
 `
@@ -296,7 +296,7 @@ console.log(input.length);
       "ใช้ join('') เพื่อนำตัวอักษรมาต่อกันกลับเป็นข้อความ"
     ],
     starter: `const fs = require("fs");
-const text = fs.readFileSync(0, "utf8").trim();
+const text = fs.readFileSync("/dev/stdin").toString().trim();
 
 // กลับลำดับข้อความของ text
 // แล้วแสดงผล
@@ -307,7 +307,7 @@ const text = fs.readFileSync(0, "utf8").trim();
     score: 30,
     revealDelaySec: 30,
     exampleSolution: `const fs = require("fs");
-const input = fs.readFileSync(0, "utf8").trim();
+const input = fs.readFileSync("/dev/stdin").toString().trim();
 
 console.log(input.split("").reverse().join(""));
 `

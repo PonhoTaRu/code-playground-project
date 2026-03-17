@@ -24,6 +24,7 @@ function App() {
   const [score, setScore] = useState(0);
   const [solvedIds, setSolvedIds] = useState([]);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
+  const [customInput, setCustomInput] = useState("");
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authMode, setAuthMode] = useState("login");
@@ -167,7 +168,7 @@ function App() {
           problemId: currentProblem.id,
           sourceCode: code,
           languageId: 63,
-          customInput: currentProblem.samples?.[0]?.input || ""
+          customInput: customInput || currentProblem.samples?.[0]?.input || ""
         })
       });
 
@@ -519,6 +520,26 @@ Status: ${c.pass ? "Passed" : "Failed"}${c.stderr ? `\nstderr: ${c.stderr}` : ""
               <h2>JavaScript</h2>
             </div>
 
+            <div style={{ marginTop: 16 }}>
+  <h3>Custom Input</h3>
+
+  <textarea
+    value={customInput}
+    onChange={(e) => setCustomInput(e.target.value)}
+    placeholder="ใส่ input เพื่อทดสอบ เช่น: มินท์"
+    style={{
+      width: "100%",
+      minHeight: 90,
+      borderRadius: 8,
+      padding: 12,
+      background: "#0f172a",
+      color: "#fff",
+      border: "1px solid #334155",
+      boxSizing: "border-box"
+    }}
+  />
+</div>
+
             <div className="toolbar">
               <button
                 className="toolbar-btn secondary"
@@ -527,6 +548,12 @@ Status: ${c.pass ? "Passed" : "Failed"}${c.stderr ? `\nstderr: ${c.stderr}` : ""
               >
                 Run
               </button>
+              <button
+  className="toolbar-btn secondary"
+  onClick={() => setCustomInput(currentProblem?.samples?.[0]?.input || "")}
+>
+  ใช้ตัวอย่าง
+</button>
               <button
                 className="toolbar-btn primary"
                 onClick={handleSubmit}
