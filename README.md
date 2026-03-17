@@ -1,54 +1,83 @@
-✅ การเตรียมตัวก่อนรันโปรเจกต์
-1. ติดตั้งโปรแกรมที่จำเป็น
+🚀 Code Playground – Setup & Run Guide
+🧩 Overview
 
-Node.js (แนะนำ v18+)
-npm
+This project is a full-stack web application for practicing programming with real-time code execution.
 
-2. เตรียมโปรเจกต์
-แตกไฟล์โปรเจกต์
+🎨 Frontend: React + Vite
 
-โครงสร้างต้องมี:
+⚙️ Backend: Node.js + Express
 
-code-playground/ (Frontend)
+🗄️ Database: SQLite
 
-server/ (Backend)
+🧪 Code Execution: Judge0 API
 
-3. ติดตั้ง dependencies
+⚙️ Prerequisites
 
-ฝั่ง Backend:
+Make sure you have installed:
 
+✅ Node.js (v18 or higher)
+
+✅ npm
+
+📁 Project Structure
+code-playground-project/
+│
+├── code-playground/   # Frontend (React)
+├── server/            # Backend (Node.js)
+📦 Installation
+1. Install Backend dependencies
 cd server
 npm install
-
-ฝั่ง Frontend:
-
-cd code-playground
+2. Install Frontend dependencies
+cd ../code-playground
 npm install
-4. ตั้งค่า Judge0 API
+🔑 Environment Setup (Important)
 
-สมัคร RapidAPI (Judge0)
+Create a .env file inside the server/ folder:
 
-นำ API Key ไปใส่ใน .env หรือ server.js
+JUDGE0_API_KEY=your_api_key_here
+JUDGE0_API_URL=https://judge0-ce.p.rapidapi.com
 
-5. รันระบบ
+📌 You can get your API key from RapidAPI (Judge0)
 
-รัน Backend:
-
+▶️ Running the Application
+1. Start Backend
+cd server
 node server.js
-
-รัน Frontend:
-
+2. Start Frontend
+cd code-playground
 npm run dev
-6. ตรวจสอบการเชื่อมต่อ
+🌐 Access the Application
 
-Frontend ต้องเรียก API ไปที่ Backend ถูก (เช่น localhost:3000)
+Open your browser and go to:
 
-Backend ต้องเชื่อม Judge0 ได้
+http://localhost:5173
+🔗 Important Notes
 
-7. ทดสอบการทำงาน
+Ensure Backend is running before using the Frontend
 
-สมัคร / Login
+Frontend API URL should point to:
 
-เขียนโค้ด
+http://localhost:3000
 
-กด Run / Submit แล้วมีผลลัพธ์
+If Judge0 API is not configured → Code execution will not work
+
+🧪 Basic Testing
+
+✅ Register a new account
+
+✅ Login
+
+✅ Solve a problem
+
+✅ Click Run / Submit
+
+✅ Check output/result
+
+⚠️ Common Issues
+Issue	Cause	Fix
+❌ Run not working	No Judge0 API key	Add .env
+❌ Login error	Invalid/expired token	Re-login
+❌ Blank page	Missing dependencies	Run npm install
+❌ CORS error	Backend config issue	Enable cors()
+❌ API not responding	Backend not running	Start server
