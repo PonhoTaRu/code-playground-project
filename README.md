@@ -41,6 +41,8 @@ JWT_SECRET=change_this_secret
 CORS_ORIGIN=http://localhost:5173
 ACTIVE_PROBLEM_TTL_MS=900000
 
+> In production, `JWT_SECRET` is required.
+
 📌 Get your API key from RapidAPI (Judge0)
 
 ▶️ Running the Application

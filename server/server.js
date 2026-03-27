@@ -11,9 +11,14 @@ const { validateOutput } = require("./validators");
 const { register, login } = require('./auth');
 
 const app = express();
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET =
+  process.env.JWT_SECRET ||
+  (process.env.NODE_ENV === "production" ? "" : "dev_only_change_me");
 if (!JWT_SECRET) {
-  throw new Error("Missing required env: JWT_SECRET");
+  throw new Error("Missing required env: JWT_SECRET (required in production)");
+}
+if (!process.env.JWT_SECRET && process.env.NODE_ENV !== "production") {
+  console.warn("[security] Using fallback JWT secret for local development.");
 }
 
 const allowedOrigins = String(process.env.CORS_ORIGIN || "http://localhost:5173")
@@ -440,9 +445,10 @@ app.post('/api/submit', async (req, res) => {
         : statusCode === 429
         ? 'Judge0 ถูกเรียกเกินโควตา กรุณาลองใหม่ภายหลัง'
         : 'Execution failed';
+    const outgoingStatus = statusCode === 429 ? 429 : 500;
 
     console.error('Submit error:', err.response?.data || err.message);
-    res.status(500).json({
+    res.status(outgoingStatus).json({
       status: 'Error',
       message: friendlyMessage,
       details: err.response?.data || err.message,
