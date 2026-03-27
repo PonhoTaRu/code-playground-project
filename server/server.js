@@ -11,17 +11,44 @@ const { validateOutput } = require("./validators");
 const { register, login } = require('./auth');
 
 const app = express();
-app.use(cors());
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("Missing required env: JWT_SECRET");
+}
+
+const allowedOrigins = String(process.env.CORS_ORIGIN || "http://localhost:5173")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error("CORS blocked"));
+  }
+}));
 app.use(express.json({ limit: '1mb' }));
 
 app.post('/register', register);
 app.post('/login', login);
 
-const JUDGE0_ENDPOINT = process.env.JUDGE0_ENDPOINT || 'https://judge0-ce.p.rapidapi.com';
-const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || '';
-const SECRET = process.env.JWT_SECRET || 'my_secret_key';
+const JUDGE0_ENDPOINT = process.env.JUDGE0_ENDPOINT || process.env.JUDGE0_API_URL || 'https://judge0-ce.p.rapidapi.com';
+const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || process.env.JUDGE0_API_KEY || '';
+const SECRET = JWT_SECRET;
 
-let activeProblems = [];
+const activeProblemsByKey = new Map();
+const ACTIVE_PROBLEM_TTL_MS = Number(process.env.ACTIVE_PROBLEM_TTL_MS || 15 * 60 * 1000);
+
+function cleanupExpiredProblemSets() {
+  const now = Date.now();
+  for (const [key, value] of activeProblemsByKey.entries()) {
+    if (!value?.updatedAt || now - value.updatedAt > ACTIVE_PROBLEM_TTL_MS) {
+      activeProblemsByKey.delete(key);
+    }
+  }
+}
+
+setInterval(cleanupExpiredProblemSets, Math.max(60_000, Math.floor(ACTIVE_PROBLEM_TTL_MS / 2))).unref();
 
 /* =========================
    Ensure extra tables exist
@@ -85,6 +112,12 @@ function getOptionalUser(req) {
   }
 }
 
+function getProblemSetKey(req) {
+  const authUser = getOptionalUser(req);
+  if (authUser?.id) return `user:${authUser.id}`;
+  return `ip:${req.ip || "unknown"}`;
+}
+
 function calculateScore(problem, isAccepted, usedSolution = false) {
   if (!isAccepted) return 0;
 
@@ -100,7 +133,13 @@ function calculateScore(problem, isAccepted, usedSolution = false) {
 app.get("/api/problems", (req, res) => {
   try {
     const difficulty = req.query.difficulty || "all";
-    activeProblems = generateProblems(3, difficulty);
+    const key = getProblemSetKey(req);
+    const activeProblems = generateProblems(3, difficulty);
+    activeProblemsByKey.set(key, {
+      updatedAt: Date.now(),
+      revealedProblemIds: new Set(),
+      problems: activeProblems
+    });
 
     const safeProblems = activeProblems.map(({ tests, validator, ...rest }) => rest);
 
@@ -116,6 +155,27 @@ app.get("/api/problems", (req, res) => {
       details: error.message
     });
   }
+});
+
+app.post('/api/problems/:problemId/reveal', (req, res) => {
+  const key = getProblemSetKey(req);
+  const bucket = activeProblemsByKey.get(key);
+  const problemId = req.params.problemId;
+
+  if (!bucket?.problems?.length) {
+    return res.status(400).json({ message: 'ไม่พบชุดโจทย์ของผู้ใช้ กรุณาโหลดโจทย์ใหม่' });
+  }
+
+  const exists = bucket.problems.some((p) => p.id === problemId);
+  if (!exists) {
+    return res.status(404).json({ message: 'ไม่พบโจทย์ในชุดปัจจุบัน' });
+  }
+
+  bucket.revealedProblemIds.add(problemId);
+  bucket.updatedAt = Date.now();
+  activeProblemsByKey.set(key, bucket);
+
+  return res.json({ ok: true });
 });
 
 app.get('/api/me', authMiddleware, (req, res) => {
@@ -271,10 +331,12 @@ app.post('/api/submit', async (req, res) => {
       problemId,
       sourceCode,
       languageId = 71,
-      customInput,
-      usedSolution = false
+      customInput
     } = req.body;
 
+    const key = getProblemSetKey(req);
+    const bucket = activeProblemsByKey.get(key);
+    const activeProblems = bucket?.problems || [];
     const problem = activeProblems.find((p) => p.id === problemId);
     if (!problem) {
       return res.status(400).json({ error: 'Unknown problemId' });
@@ -338,42 +400,51 @@ app.post('/api/submit', async (req, res) => {
 
     // optional history save when user sends Bearer token
     const authUser = getOptionalUser(req);
-const score = calculateScore(problem, status === 'Accepted', usedSolution);
+    const usedSolution = Boolean(bucket?.revealedProblemIds?.has(problemId));
+    const score = calculateScore(problem, status === 'Accepted', usedSolution);
 
-if (!customInput) {
-  if (!authUser?.id) {
-    console.warn("History not saved: no valid auth user on submit");
-  } else {
-    db.run(
-      `
-        INSERT INTO play_history (user_id, problem_title, difficulty, status, score, source_code)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `,
-      [
-        authUser.id,
-        problem.title || `Problem ${problem.id}`,
-        problem.difficulty || 'easy',
-        status,
-        score,
-        sourceCode || ''
-      ],
-      function (dbErr) {
-        if (dbErr) {
-          console.error("Save history error:", dbErr);
-        } else {
-          console.log("History saved, row id =", this.lastID);
-        }
+    if (!customInput) {
+      if (!authUser?.id) {
+        console.warn("History not saved: no valid auth user on submit");
+      } else {
+        db.run(
+          `
+            INSERT INTO play_history (user_id, problem_title, difficulty, status, score, source_code)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `,
+          [
+            authUser.id,
+            problem.title || `Problem ${problem.id}`,
+            problem.difficulty || 'easy',
+            status,
+            score,
+            sourceCode || ''
+          ],
+          function (dbErr) {
+            if (dbErr) {
+              console.error("Save history error:", dbErr);
+            } else {
+              console.log("History saved, row id =", this.lastID);
+            }
+          }
+        );
       }
-    );
-  }
-}
+    }
 
     res.json({ status, cases: results, hints, score });
   } catch (err) {
+    const statusCode = err.response?.status || 500;
+    const friendlyMessage =
+      statusCode === 403
+        ? 'Judge0 ปฏิเสธคำขอ (ตรวจ RAPIDAPI_KEY / quota)'
+        : statusCode === 429
+        ? 'Judge0 ถูกเรียกเกินโควตา กรุณาลองใหม่ภายหลัง'
+        : 'Execution failed';
+
     console.error('Submit error:', err.response?.data || err.message);
     res.status(500).json({
       status: 'Error',
-      message: 'Execution failed',
+      message: friendlyMessage,
       details: err.response?.data || err.message,
     });
   }
