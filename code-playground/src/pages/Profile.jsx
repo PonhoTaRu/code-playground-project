@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
 export default function Profile({ onBack, onUsernameChange, onLogout }) {
   const [history, setHistory] = useState([]);
   const [username, setUsername] = useState("");
@@ -33,10 +35,10 @@ export default function Profile({ onBack, onUsernameChange, onLogout }) {
     }
 
     Promise.all([
-      fetchJson("http://localhost:8080/api/me", {
+      fetchJson(`${API_BASE_URL}/api/me`, {
         headers: { Authorization: "Bearer " + token }
       }),
-      fetchJson("http://localhost:8080/api/me/history", {
+      fetchJson(`${API_BASE_URL}/api/me/history`, {
         headers: { Authorization: "Bearer " + token }
       })
     ])
@@ -61,7 +63,7 @@ export default function Profile({ onBack, onUsernameChange, onLogout }) {
         return;
       }
 
-      const data = await fetchJson("http://localhost:8080/api/me/username", {
+      const data = await fetchJson(`${API_BASE_URL}/api/me/username`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -96,7 +98,7 @@ export default function Profile({ onBack, onUsernameChange, onLogout }) {
         return;
       }
 
-      const data = await fetchJson("http://localhost:8080/api/me/password", {
+      const data = await fetchJson(`${API_BASE_URL}/api/me/password`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

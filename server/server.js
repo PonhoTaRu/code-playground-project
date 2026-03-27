@@ -17,11 +17,11 @@ app.use(express.json({ limit: '1mb' }));
 app.post('/register', register);
 app.post('/login', login);
 
-const JUDGE0_ENDPOINT = process.env.JUDGE0_ENDPOINT || 'https://judge0-ce.p.rapidapi.com';
-const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || '';
+const JUDGE0_ENDPOINT = process.env.JUDGE0_ENDPOINT || process.env.JUDGE0_API_URL || 'https://judge0-ce.p.rapidapi.com';
+const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || process.env.JUDGE0_API_KEY || '';
 const SECRET = process.env.JWT_SECRET || 'my_secret_key';
 
-let activeProblems = [];
+const activeProblemsByKey = new Map();
 
 /* =========================
    Ensure extra tables exist
@@ -85,6 +85,12 @@ function getOptionalUser(req) {
   }
 }
 
+function getProblemSetKey(req) {
+  const authUser = getOptionalUser(req);
+  if (authUser?.id) return `user:${authUser.id}`;
+  return `ip:${req.ip || "unknown"}`;
+}
+
 function calculateScore(problem, isAccepted, usedSolution = false) {
   if (!isAccepted) return 0;
 
@@ -100,7 +106,9 @@ function calculateScore(problem, isAccepted, usedSolution = false) {
 app.get("/api/problems", (req, res) => {
   try {
     const difficulty = req.query.difficulty || "all";
-    activeProblems = generateProblems(3, difficulty);
+    const key = getProblemSetKey(req);
+    const activeProblems = generateProblems(3, difficulty);
+    activeProblemsByKey.set(key, activeProblems);
 
     const safeProblems = activeProblems.map(({ tests, validator, ...rest }) => rest);
 
@@ -275,6 +283,8 @@ app.post('/api/submit', async (req, res) => {
       usedSolution = false
     } = req.body;
 
+    const key = getProblemSetKey(req);
+    const activeProblems = activeProblemsByKey.get(key) || [];
     const problem = activeProblems.find((p) => p.id === problemId);
     if (!problem) {
       return res.status(400).json({ error: 'Unknown problemId' });

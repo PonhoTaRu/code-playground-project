@@ -35,8 +35,9 @@ npm install
 
 Create a .env file inside the server/ folder:
 
-JUDGE0_API_KEY=your_api_key_here
-JUDGE0_API_URL=https://judge0-ce.p.rapidapi.com
+RAPIDAPI_KEY=your_api_key_here
+JUDGE0_ENDPOINT=https://judge0-ce.p.rapidapi.com
+JWT_SECRET=change_this_secret
 
 📌 Get your API key from RapidAPI (Judge0)
 
@@ -55,7 +56,11 @@ Ensure Backend is running before using the Frontend
 
 Frontend API URL should point to:
 
-http://localhost:3000
+http://localhost:8080
+
+For frontend env (optional), create `code-playground/.env`:
+
+VITE_API_BASE_URL=http://localhost:8080
 
 If Judge0 API is not configured → Code execution will not work
 

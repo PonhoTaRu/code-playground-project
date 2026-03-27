@@ -1,78 +1,91 @@
-import jwt from "jsonwebtoken";
-import db from "./db.js";
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
+const db = require("./db");
 
 const SECRET = process.env.JWT_SECRET || "my_secret_key";
 
-export function register(req,res){
+async function register(req, res) {
+  const { username, password } = req.body;
 
-  const {username,password} = req.body;
+  if (!String(username || "").trim() || !String(password || "").trim()) {
+    return res.status(400).json({ message: "กรุณากรอก username และ password" });
+  }
 
-  db.run(
-    "INSERT INTO users(username,password) VALUES (?,?)",
-    [username,password],
-    function(err){
+  if (String(password).length < 4) {
+    return res.status(400).json({ message: "รหัสผ่านสั้นเกินไป" });
+  }
 
-      if(err){
-        return res.status(400).json({error:"username already exists"});
+  try {
+    const hashed = await bcrypt.hash(String(password), 10);
+
+    db.run(
+      "INSERT INTO users(username,password) VALUES (?,?)",
+      [String(username).trim(), hashed],
+      function (err) {
+        if (err) {
+          return res.status(400).json({ message: "username already exists" });
+        }
+
+        return res.json({ success: true, message: "สมัครสมาชิกสำเร็จ" });
       }
-
-      res.json({success:true});
-
-    }
-  )
-
+    );
+  } catch (err) {
+    return res.status(500).json({ message: "สมัครสมาชิกไม่สำเร็จ" });
+  }
 }
 
-export function login(req,res){
+function isBcryptHash(value = "") {
+  return /^\$2[aby]\$/.test(String(value));
+}
 
-  const {username,password} = req.body;
+async function login(req, res) {
+  const { username, password } = req.body;
+
+  if (!String(username || "").trim() || !String(password || "").trim()) {
+    return res.status(400).json({ message: "กรุณากรอก username และ password" });
+  }
 
   db.get(
     "SELECT * FROM users WHERE username=?",
-    [username],
-    (err,user)=>{
+    [String(username).trim()],
+    async (err, user) => {
+      if (err) {
+        return res.status(500).json({ message: "เข้าสู่ระบบไม่สำเร็จ" });
+      }
 
-      if(!user || user.password!==password){
-        return res.status(401).json({error:"invalid credentials"});
+      if (!user) {
+        return res.status(401).json({ message: "invalid credentials" });
+      }
+
+      let isValid = false;
+      const inputPassword = String(password);
+
+      if (isBcryptHash(user.password)) {
+        isValid = await bcrypt.compare(inputPassword, user.password);
+      } else {
+        // backward compatibility for legacy plain-text rows
+        isValid = user.password === inputPassword;
+      }
+
+      if (!isValid) {
+        return res.status(401).json({ message: "invalid credentials" });
       }
 
       const token = jwt.sign(
-        {id:user.id,username:user.username},
-        SECRET
+        { id: user.id, username: user.username },
+        SECRET,
+        { expiresIn: "1h" }
       );
 
-      res.json({
+      return res.json({
         token,
-        username:user.username
+        username: user.username
       });
-
     }
-  )
-
+  );
 }
 
-export function authMiddleware(req,res,next){
-
-  const header = req.headers.authorization;
-
-  if(!header){
-    return res.status(401).json({error:"no token"});
-  }
-
-  const token = header.split(" ")[1];
-
-  try{
-
-    const decoded = jwt.verify(token,SECRET);
-
-    req.user = decoded;
-
-    next();
-
-  }catch(err){
-
-    return res.status(401).json({error:"invalid token"});
-
-  }
-
-}
+module.exports = {
+  register,
+  login
+};

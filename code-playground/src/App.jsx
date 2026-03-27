@@ -4,6 +4,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
 const fallbackStarter = `const fs = require("fs");
 const input = fs.readFileSync(0, "utf8").trim();
 
@@ -129,7 +131,7 @@ function App() {
 
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `http://localhost:8080/api/problems?difficulty=${level}`,
+        `${API_BASE_URL}/api/problems?difficulty=${level}`,
         {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         }
@@ -186,7 +188,7 @@ function App() {
         setCustomInput(effectiveInput);
       }
 
-      const res = await fetch("http://localhost:8080/api/submit", {
+      const res = await fetch(`${API_BASE_URL}/api/submit`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -229,7 +231,7 @@ function App() {
       setErrorMessage("");
 
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:8080/api/submit", {
+      const res = await fetch(`${API_BASE_URL}/api/submit`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -238,7 +240,8 @@ function App() {
         body: JSON.stringify({
           problemId: currentProblem.id,
           sourceCode: code,
-          languageId: 63
+          languageId: 63,
+          usedSolution
         })
       });
 
